@@ -1,0 +1,18 @@
+# Naver login session & credentials (개인정보 및 인증 세션 보호)
+.naver_session/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+
+# Logs & temp debug
+*.log
+*debug*.png
+.DS_Store
+Thumbs.db
