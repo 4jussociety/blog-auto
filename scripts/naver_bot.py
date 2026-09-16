@@ -22,7 +22,6 @@ from playwright.sync_api import sync_playwright
 
 WORKSPACE_DIR = Path(__file__).resolve().parent.parent
 SESSION_DIR = WORKSPACE_DIR / ".naver_session" / "profile"
-BLOG_DIR = WORKSPACE_DIR / "블로그"
 
 
 def parse_post(file_path: Path):
@@ -137,7 +136,28 @@ def login_helper():
         context.close()
 
 
-def draft_post(post_file: Path, category_override: str = None):
+COLOR_MAP = {
+    "green": "#00a84b",
+    "초록": "#00a84b",
+    "red": "#ba0000",
+    "빨강": "#ba0000",
+    "blue": "#004e82",
+    "파랑": "#004e82",
+    "gray": "#777777",
+    "회색": "#777777",
+}
+
+HL_MAP = {
+    "yellow": "#fff8b2",
+    "노랑": "#fff8b2",
+    "green": "#c2f4db",
+    "연두": "#c2f4db",
+    "pink": "#ffcdc0",
+    "핑크": "#ffcdc0",
+}
+
+
+def draft_post(post_file: Path, category_override: str = None, headless: bool = False):
     """원고를 읽어 네이버 스마트에디터 ONE에 주입 후 [임시저장] 실행"""
     if not SESSION_DIR.exists():
         print("오류: 저장된 로그인 세션이 없습니다. 먼저 `python scripts/naver_bot.py login`을 실행해주세요.")
@@ -153,11 +173,12 @@ def draft_post(post_file: Path, category_override: str = None):
     print(f"- 제목: {title}")
     print(f"- 카테고리: {category}")
     print(f"- 태그 ({len(tags)}개): {', '.join(tags[:5])}...")
+    print(f"- 헤드리스 모드: {headless}")
 
     with sync_playwright() as p:
         context = p.chromium.launch_persistent_context(
             user_data_dir=str(SESSION_DIR),
-            headless=False,  # 주입 과정을 눈으로 확인할 수 있도록 False 유지
+            headless=headless,
             channel="chrome",
             viewport={"width": 1280, "height": 960},
             args=[
@@ -195,25 +216,76 @@ def draft_post(post_file: Path, category_override: str = None):
         # 팝업 처리 (작성 중인 글이 있습니다 / 도움말 팝업 등)
         try_close_popups(page)
 
+        # 기존 동일 제목의 이전 초안이 있다면 정리하여 항상 1개의 초안만 유지
+        clean_duplicate_drafts(page, title)
+
         # 1. 카테고리 선택
         select_category(page, category)
 
         # 2. 제목 입력
         enter_title(page, title)
 
-        # 3. 본문 및 서식(스티커, 인용구, 구분선, 사진) 입력
-        enter_body(page, body)
+        # 3. 본문 및 서식(19pt 기본크기, 스티커, 인용구, 구분선, 사진, 형광펜, 글자색) 입력
+        enter_body(page, body, post_dir=post_file.parent)
 
         # 4. 태그 입력
         if tags:
             enter_tags(page, tags)
 
-        # 5. [임시저장] 버튼 클릭
+        # 5. [임시저장] 버튼 단 1회 클릭
         save_draft(page)
 
         print("\n[임시저장 완료] 3초 후 브라우저를 닫습니다.")
         page.wait_for_timeout(3000)
         context.close()
+
+
+def clean_duplicate_drafts(page, title: str):
+    """기존 임시저장 목록에서 동일한 제목을 가진 이전 초안들을 정리하여 글이 중복 누적되지 않고 1개만 깔끔하게 유지되도록 합니다."""
+    try:
+        save_count_btn = page.locator("button[class*='save_count']").first
+        if not save_count_btn.is_visible(timeout=2000):
+            return
+        save_count_btn.click()
+        page.wait_for_timeout(1500)
+
+        # 특수문자/따옴표 제거 후 첫 2개 단어로 안전하게 검색
+        clean_words = re.sub(r"[^\w\s가-힣]", " ", title).split()
+        search_kw = " ".join(clean_words[:2]) if clean_words else ""
+        
+        if search_kw:
+            matching_rows = page.locator("li.item__k1QHQ, li[class*='item']").filter(has_text=search_kw)
+            del_buttons = matching_rows.locator("button.delete_button__uksCg, button[class*='delete']").all()
+            if del_buttons:
+                print(f"[*] 기존 동일 포스트의 이전 초안 {len(del_buttons)}건 발견: 중복 정리합니다.")
+                for b in del_buttons:
+                    try:
+                        b.click(force=True)
+                        page.wait_for_timeout(400)
+                        confirm = page.locator(".se-popup-button-confirm, button:has-text('확인'), button:has-text('삭제')").first
+                        if confirm.is_visible(timeout=1000):
+                            confirm.click(force=True)
+                            page.wait_for_timeout(400)
+                    except Exception:
+                        pass
+    except Exception as e:
+        print(f"임시저장 초안 정리 건너뜀: {e}")
+    finally:
+        # 팝업이 열려있다면 반드시 닫고 포커스를 본문으로 복귀
+        try:
+            page.keyboard.press("Escape")
+            page.wait_for_timeout(300)
+            close_btn = page.locator("button.popup_close_button, .layer_popup button[class*='close'], button[aria-label='닫기'], .popup_container button[class*='close']").first
+            if close_btn.count() > 0 and close_btn.is_visible():
+                close_btn.click(force=True)
+                page.wait_for_timeout(300)
+            # dimmed 오버레이가 사라질 때까지 대기
+            dimmed = page.locator(".dimmed__QzVgp, .layer_popup__MFPwH")
+            if dimmed.count() > 0 and dimmed.first.is_visible():
+                page.keyboard.press("Escape")
+                page.wait_for_timeout(300)
+        except Exception:
+            pass
 
 
 def try_close_popups(page):
@@ -222,7 +294,7 @@ def try_close_popups(page):
     # '작성 중인 글이 있습니다' 팝업 -> '취소' 클릭하여 새 글 작성
     cancel_selectors = [
         ".se-popup-button-cancel",
-        "button:has-text('취소')",
+        ".se-popup-alert button:has-text('취소')",
         ".se-dialog-button-cancel"
     ]
     for sel in cancel_selectors:
@@ -230,7 +302,7 @@ def try_close_popups(page):
             btn = page.locator(sel).first
             if btn.is_visible(timeout=1000):
                 print("이전 작성 중인 글 팝업 감지: '취소' 클릭 (새 글 작성)")
-                btn.click()
+                btn.click(force=True)
                 page.wait_for_timeout(1000)
                 break
         except Exception:
@@ -238,12 +310,10 @@ def try_close_popups(page):
 
     # 도움말/튜토리얼 닫기 버튼
     help_close_selectors = [
-        ".container__O3PGu button",
-        ".se-help-panel-close-button",
-        "button:has-text('닫기')",
-        ".se-dialog-button-close",
         "button[aria-label='도움말 닫기']",
-        ".se-help-title + button"
+        ".se-help-panel-close-button",
+        ".container__O3PGu button",
+        ".se-dialog-button-close"
     ]
     for sel in help_close_selectors:
         try:
@@ -258,16 +328,12 @@ def try_close_popups(page):
 def select_category(page, category_name: str):
     """카테고리 선택"""
     try:
-        # 카테고리 버튼 찾기
         cat_btn = page.locator("button.se-category-button, .se-category-select, button:has-text('카테고리')").first
         if cat_btn.is_visible(timeout=2000):
             cat_btn.click()
             page.wait_for_timeout(1000)
             
-            # 카테고리 목록에서 세부 카테고리 이름으로 검색하여 클릭
-            # 예: '체형/통증 가이드 > 증상별 원인 분석' 인 경우 '증상별 원인 분석' 검색
             target_name = category_name.split(">")[-1].strip() if ">" in category_name else category_name.strip()
-            
             item = page.locator(f"span:has-text('{target_name}'), li:has-text('{target_name}')").first
             if item.is_visible(timeout=2000):
                 item.click()
@@ -282,10 +348,8 @@ def select_category(page, category_name: str):
 def enter_title(page, title: str):
     """제목 입력"""
     try:
-        # 스마트에디터 ONE 제목 영역 클릭
         title_area = page.locator(".se-documentTitle, .se-title-text, div[class*='documentTitle']").first
         if not title_area.is_visible(timeout=3000):
-            # p.se-placeholder 또는 제목 영역 찾기
             title_area = page.locator("text='제목을 입력하세요'").first
             
         title_area.click()
@@ -297,11 +361,178 @@ def enter_title(page, title: str):
         print(f"제목 입력 오류: {e}")
 
 
-def enter_body(page, body: str):
-    """본문 내용을 줄 단위 및 마커 단위로 파싱하여 에디터에 주입"""
+def parse_line_segments(line: str):
+    """
+    문자열 내의 [HIGHLIGHT], [HIGHLIGHT:색상], [COLOR:색상], **볼드** 태그를 파싱하여
+    (text, hl_color, font_color, is_bold) 세그먼트 튜플 리스트로 반환
+    """
+    pattern = re.compile(
+        r'(\[HIGHLIGHT(?::(\w+))?\](.*?)\[/HIGHLIGHT\]|\[COLOR:(\w+)\](.*?)\[/COLOR\]|\*\*(.*?)\*\*)'
+    )
+    
+    tokens = []
+    last_idx = 0
+    for m in pattern.finditer(line):
+        start, end = m.span()
+        if start > last_idx:
+            tokens.append((line[last_idx:start], None, None, False))
+        
+        full_match = m.group(0)
+        if full_match.startswith('[HIGHLIGHT'):
+            hl_name = m.group(2) or "yellow"
+            hl_color = HL_MAP.get(hl_name.lower(), hl_name)
+            inner = m.group(3)
+            font_color = None
+            col_match = re.match(r'\[COLOR:(\w+)\](.*?)\[/COLOR\]', inner)
+            if col_match:
+                font_color = COLOR_MAP.get(col_match.group(1).lower(), col_match.group(1))
+                inner = col_match.group(2)
+            is_bold = inner.startswith('**') and inner.endswith('**')
+            inner_clean = inner.strip('*')
+            tokens.append((inner_clean, hl_color, font_color, is_bold))
+
+        elif full_match.startswith('[COLOR'):
+            color_name = m.group(4)
+            font_color = COLOR_MAP.get(color_name.lower(), color_name)
+            inner = m.group(5)
+            hl_color = None
+            hl_match = re.match(r'\[HIGHLIGHT(?::(\w+))?\](.*?)\[/HIGHLIGHT\]', inner)
+            if hl_match:
+                hl_name = hl_match.group(1) or "yellow"
+                hl_color = HL_MAP.get(hl_name.lower(), hl_name)
+                inner = hl_match.group(2)
+            is_bold = inner.startswith('**') and inner.endswith('**')
+            inner_clean = inner.strip('*')
+            tokens.append((inner_clean, hl_color, font_color, is_bold))
+
+        elif full_match.startswith('**'):
+            inner = m.group(6)
+            tokens.append((inner, None, None, True))
+        
+        last_idx = end
+        
+    if last_idx < len(line):
+        tokens.append((line[last_idx:], None, None, False))
+        
+    return tokens
+
+
+def type_rich_paragraph(page, segments):
+    """(text, hl_color, font_color, is_bold) 세그먼트를 19pt 단락에 입력하고 서식 적용"""
     try:
-        # 본문 영역 포커스 이동
-        # 제목에서 Tab 키를 누르거나 본문 영역 클릭
+        last_p = page.locator("p.se-text-paragraph").last
+        last_p.click(force=True, timeout=2000)
+    except Exception:
+        page.keyboard.press("Escape")
+        try:
+            page.locator(".se-canvas, .se-body").first.click(position={"x": 300, "y": 900}, force=True)
+        except Exception:
+            pass
+
+    page.wait_for_timeout(80)
+
+    for text, hl_color, font_color, is_bold in segments:
+        if not text:
+            continue
+        page.keyboard.type(text, delay=8)
+        page.wait_for_timeout(60)
+
+        if hl_color or font_color or is_bold:
+            # 방금 입력한 글자 수만큼 Shift+ArrowLeft로 선택
+            for _ in range(len(text)):
+                page.keyboard.press("Shift+ArrowLeft")
+            page.wait_for_timeout(100)
+
+            # 1. 형광펜 적용
+            if hl_color:
+                try:
+                    page.locator("button.se-background-color-toolbar-button").first.click()
+                    page.wait_for_timeout(150)
+                    page.locator(f"button.se-color-palette[data-color='{hl_color}']").first.click()
+                    page.wait_for_timeout(150)
+                except Exception:
+                    pass
+
+            # 2. 글자색 적용
+            if font_color:
+                try:
+                    page.locator("button.se-font-color-toolbar-button").first.click()
+                    page.wait_for_timeout(150)
+                    page.locator(f"button.se-color-palette[data-color='{font_color}']").first.click()
+                    page.wait_for_timeout(150)
+                except Exception:
+                    pass
+
+            # 3. 볼드 적용
+            if is_bold:
+                page.keyboard.press("Control+b")
+                page.wait_for_timeout(80)
+
+            # 선택 해제
+            page.keyboard.press("ArrowRight")
+            page.wait_for_timeout(80)
+
+            # 후속 일반 글자를 위한 서식 리셋
+            if is_bold:
+                page.keyboard.press("Control+b")
+            if hl_color:
+                try:
+                    page.locator("button.se-background-color-toolbar-button").first.click()
+                    page.wait_for_timeout(100)
+                    page.locator("button.se-color-palette-no-color").first.click()
+                    page.wait_for_timeout(100)
+                except Exception:
+                    pass
+            if font_color:
+                try:
+                    page.locator("button.se-font-color-toolbar-button").first.click()
+                    page.wait_for_timeout(100)
+                    page.locator("button.se-color-palette[data-color='#000000']").first.click()
+                    page.wait_for_timeout(100)
+                except Exception:
+                    pass
+
+    page.keyboard.press("Enter")
+    page.wait_for_timeout(80)
+
+
+def resolve_image_path(rel_path_str: str, post_dir: Path = None) -> Path | None:
+    """assets, images, assests 폴더 등에서 파일 이름 및 경로로 이미지를 검색합니다."""
+    clean_name = Path(rel_path_str).name
+    # 0. 포스트 원고 파일이 위치한 폴더 기준 상대경로 우선 탐색
+    if post_dir:
+        candidate = post_dir / rel_path_str
+        if candidate.exists() and candidate.is_file():
+            return candidate
+        candidate_img = post_dir / "images" / clean_name
+        if candidate_img.exists() and candidate_img.is_file():
+            return candidate_img
+
+    direct = WORKSPACE_DIR / rel_path_str
+    if direct.exists() and direct.is_file():
+        return direct
+    
+    candidates = [
+        WORKSPACE_DIR / "images" / clean_name,
+        WORKSPACE_DIR / "assets" / clean_name,
+        WORKSPACE_DIR / "assets" / "리뷰" / clean_name,
+        WORKSPACE_DIR / "assests" / clean_name,
+        WORKSPACE_DIR / "assests" / "리뷰" / clean_name,
+    ]
+    for c in candidates:
+        if c.exists() and c.is_file():
+            return c
+            
+    for p in WORKSPACE_DIR.rglob(clean_name):
+        if p.is_file():
+            return p
+            
+    return None
+
+
+def enter_body(page, body: str, post_dir: Path = None):
+    """본문 내용을 줄 단위 및 마커 단위로 파싱하여 에디터에 주입 (기본 글자 크기 19pt 적용)"""
+    try:
         body_area = page.locator(".se-main-container, .se-content, div[class*='contentContainer']").first
         body_area.click()
         page.wait_for_timeout(500)
@@ -309,34 +540,70 @@ def enter_body(page, body: str):
         page.keyboard.press("Tab")
         page.wait_for_timeout(500)
 
+    # 본문 기본 글자 크기를 19pt로 설정
+    try:
+        fs_btn = page.locator("button[data-name='font-size']").first
+        if fs_btn.is_visible(timeout=2500):
+            fs_btn.click()
+            page.wait_for_timeout(300)
+            opt19 = page.locator("button.se-toolbar-option-font-size-code-fs19-button, button:has-text('19')").first
+            if opt19.is_visible(timeout=2000):
+                opt19.click()
+                page.wait_for_timeout(300)
+                print("[*] 본문 기본 글자 크기: 19pt 설정 완료")
+    except Exception as e:
+        print(f"19pt 폰트 설정 건너뜀: {e}")
+
     lines = body.splitlines()
-    in_quote = False
+    in_tag_quote = False
+    in_md_quote = False
     quote_buffer = []
+
+    def flush_quotes():
+        nonlocal in_tag_quote, in_md_quote, quote_buffer
+        if quote_buffer:
+            insert_quote(page, "\n".join(quote_buffer))
+            quote_buffer = []
+        in_tag_quote = False
+        in_md_quote = False
 
     for line in lines:
         stripped = line.strip()
 
-        # 1. 인용구 시작/종료 처리
+        # 1-A. [QUOTE] 태그 블록 처리
         if "[QUOTE]" in stripped:
-            in_quote = True
-            quote_text = stripped.replace("[QUOTE]", "").replace("[/QUOTE]", "").strip()
+            flush_quotes()
             if "[/QUOTE]" in stripped:
-                # 한 줄 인용구
-                insert_quote(page, quote_text)
-                in_quote = False
+                q_text = stripped.replace("[QUOTE]", "").replace("[/QUOTE]", "").strip()
+                if q_text:
+                    insert_quote(page, q_text)
+                continue
             else:
-                quote_buffer = [quote_text] if quote_text else []
-            continue
+                in_tag_quote = True
+                q_text = stripped.replace("[QUOTE]", "").strip()
+                if q_text:
+                    quote_buffer.append(q_text)
+                continue
 
-        if in_quote:
+        if in_tag_quote:
             if "[/QUOTE]" in stripped:
-                quote_buffer.append(stripped.replace("[/QUOTE]", "").strip())
-                insert_quote(page, " ".join(quote_buffer))
-                in_quote = False
-                quote_buffer = []
+                q_text = stripped.replace("[/QUOTE]", "").strip()
+                if q_text:
+                    quote_buffer.append(q_text)
+                flush_quotes()
+                continue
             else:
-                quote_buffer.append(stripped)
+                if stripped:
+                    quote_buffer.append(stripped)
+                continue
+
+        # 1-B. 마크다운 > 블록 처리
+        if stripped.startswith(">"):
+            in_md_quote = True
+            quote_buffer.append(stripped.lstrip("> ").strip())
             continue
+        elif in_md_quote:
+            flush_quotes()
 
         # 2. 스티커 마커 처리
         if stripped.startswith("[STICKER:"):
@@ -352,77 +619,110 @@ def enter_body(page, body: str):
         # 4. 이미지 마커 처리
         if stripped.startswith("[IMAGE:"):
             img_rel_path = stripped.replace("[IMAGE:", "").replace("]", "").strip()
-            # 상대 경로를 절대 경로로 변환
-            img_path = WORKSPACE_DIR / img_rel_path
-            if not img_path.exists():
-                # 혹시 블로그/images 안에 있는지 확인
-                img_path = BLOG_DIR / "images" / Path(img_rel_path).name
-            
-            if img_path.exists():
+            img_path = resolve_image_path(img_rel_path, post_dir=post_dir)
+            if img_path and img_path.exists():
                 insert_image(page, img_path)
             else:
                 print(f"경고: 이미지 파일을 찾을 수 없습니다: {img_rel_path}")
             continue
 
-        # 5. 빈 줄 처리 (모바일 가독성을 위한 엔터)
+        # 5. 빈 줄 처리 (모바일 가독성 엔터)
         if not stripped:
             page.keyboard.press("Enter")
             page.wait_for_timeout(50)
             continue
 
-        # 6. 일반 텍스트 및 서식(하이라이트, 볼드, 소제목) 처리
-        # 소제목 (#, ##, ###)
+        # 6. 소제목 (#, ##, ###) 처리 -> 30pt 소제목 서식 적용
         if stripped.startswith("#"):
             clean_heading = stripped.lstrip("#").strip()
-            page.keyboard.type(clean_heading, delay=15)
-            page.keyboard.press("Enter")
-            page.wait_for_timeout(100)
+            insert_heading(page, clean_heading)
             continue
 
-        # 인라인 마커 클린업 및 타이핑
-        clean_text = clean_inline_markers(stripped)
+        # 7. 본문 텍스트 타이핑 (19pt 기본 + 인라인 형광펜/글자색/볼드 자동 적용)
+        segments = parse_line_segments(stripped)
+        type_rich_paragraph(page, segments)
+
+    # 본문 끝에 남아있는 인용구 플러시
+    flush_quotes()
+
+
+def insert_heading(page, heading_text: str):
+    """소제목 타이핑 후 툴바에서 [소제목] 30pt 서식 직접 클릭 적용 및 다음 본문 19pt 복원"""
+    try:
+        segments = parse_line_segments(heading_text)
+        # 소제목 텍스트 타이핑
+        last_p = page.locator("p.se-text-paragraph").last
+        last_p.click(force=True, timeout=2000)
+        clean_text = "".join(s[0] for s in segments)
         page.keyboard.type(clean_text, delay=10)
+        page.wait_for_timeout(200)
+
+        # 툴바 문단 서식 드롭다운 클릭 -> [소제목] 30pt 클릭
+        heading_btn = page.locator(".se-text-format-toolbar-button").first
+        heading_btn.click()
+        page.wait_for_timeout(350)
+
+        subtitle_btn = page.locator("button.se-toolbar-option-text-format-sectionTitle-button").first
+        subtitle_btn.click()
+        page.wait_for_timeout(350)
+
         page.keyboard.press("Enter")
-        page.wait_for_timeout(50)
+        page.wait_for_timeout(200)
 
+        # 소제목 엔터 후 다음 본문 문단 글자 크기를 19pt로 복원
+        fs_btn = page.locator("button[data-name='font-size']").first
+        if fs_btn.is_visible(timeout=1500):
+            fs_btn.click()
+            page.wait_for_timeout(250)
+            opt19 = page.locator("button.se-toolbar-option-font-size-code-fs19-button, button:has-text('19')").first
+            if opt19.is_visible(timeout=1500):
+                opt19.click()
+                page.wait_for_timeout(200)
 
-def clean_inline_markers(text: str) -> str:
-    """[HIGHLIGHT] 및 볼드 마크다운 등 텍스트 정리"""
-    text = re.sub(r"\[HIGHLIGHT\](.*?)\[/HIGHLIGHT\]", r"\1", text)
-    text = re.sub(r"\*\*(.*?)\*\*", r"\1", text)
-    return text
+        print(f"소제목 적용 완료 (30pt): {heading_text[:20]}...")
+    except Exception as e:
+        print(f"소제목 서식 적용 예외: {e}")
+        page.keyboard.press("Enter")
 
 
 def insert_divider(page):
-    """에디터 툴바의 구분선 삽입"""
+    """에디터 툴바의 정품 가로 구분선 삽입"""
     try:
-        divider_btn = page.locator("button[data-name='line'], button[aria-label='구분선'], button.se-toolbar-item-line").first
-        if divider_btn.is_visible(timeout=2000):
-            divider_btn.click()
-            print("구분선 삽입 완료")
+        div_btn = page.locator("button.se-insert-horizontal-line-default-toolbar-button, button:has-text('구분선')").first
+        if div_btn.is_visible(timeout=2000):
+            div_btn.click()
             page.wait_for_timeout(500)
+            page.keyboard.press("Enter")
+            page.wait_for_timeout(300)
+            print("구분선 삽입 완료")
         else:
-            # 툴바 못 찾을 시 키보드로 여백 추가
             page.keyboard.press("Enter")
     except Exception as e:
         print(f"구분선 삽입 건너뜀: {e}")
 
 
 def insert_quote(page, quote_text: str):
-    """에디터 툴바의 인용구 박스 삽입"""
+    """에디터 툴바의 인용구 박스 컴포넌트 삽입"""
     try:
-        quote_btn = page.locator("button[data-name='quotation'], button[aria-label='인용구'], button.se-toolbar-item-quotation").first
+        quote_btn = page.locator("button[data-name='quotation'], button[aria-label='인용구']").first
         if quote_btn.is_visible(timeout=2000):
             quote_btn.click()
             page.wait_for_timeout(500)
             page.keyboard.type(quote_text, delay=15)
             page.wait_for_timeout(300)
-            # 인용구 블록 밖으로 나가기 위해 아래 방향키 또는 엔터
+            # 인용구 블록 탈출 및 선택 해제
+            page.keyboard.press("Escape")
+            page.wait_for_timeout(200)
             page.keyboard.press("ArrowDown")
             page.keyboard.press("Enter")
+            page.wait_for_timeout(200)
+            try:
+                page.locator(".se-canvas, .se-body").first.click(position={"x": 300, "y": 900}, force=True)
+            except Exception:
+                pass
+            page.wait_for_timeout(200)
             print(f"인용구 삽입 완료: {quote_text[:20]}...")
         else:
-            # 인용구 버튼이 안 보이면 강조 텍스트로 대체
             page.keyboard.type(f"💬 \"{quote_text}\"", delay=15)
             page.keyboard.press("Enter")
     except Exception as e:
@@ -430,25 +730,70 @@ def insert_quote(page, quote_text: str):
 
 
 def insert_sticker(page, sticker_type: str = "greeting"):
-    """에디터 툴바의 네이버 스티커 삽입"""
+    """원장님 지정 여우 스티커 팩(cafe_004)에서 스티커 자동 선택 삽입"""
+    INDEX_MAP = {
+        "greeting": 0,    # HI~ 인사하는 여우
+        "hi": 0,
+        "like": 3,        # 좋아요 하트 여우
+        "heart": 3,
+        "cheering": 12,   # 양손 치어리딩 응원 여우
+        "fight": 12,
+        "clap": 14,       # 짝짝짝 박수 여우
+        "ok": 26,         # NO PROBLEM 엄지척 여우
+        "thumb": 26,
+    }
+    idx = INDEX_MAP.get(sticker_type.lower(), 0)
+
     try:
-        sticker_btn = page.locator("button[data-name='sticker'], button[aria-label='스티커'], button.se-toolbar-item-sticker").first
-        if sticker_btn.is_visible(timeout=2000):
-            sticker_btn.click()
+        print(f"여우 스티커 삽입 시도: [{sticker_type}] (index: {idx})...")
+        sticker_btn = page.locator("button[data-name='sticker']").first
+        sticker_btn.click()
+        page.wait_for_timeout(1500)
+
+        # 4번째 탭 (여우 스티커 팩 cafe_004) 클릭
+        fox_tab = page.locator(".se-tab-item button, .se-sticker-tab-button").nth(3)
+        if fox_tab.is_visible(timeout=2000):
+            fox_tab.click()
+            page.wait_for_timeout(800)
+
+        # 지정 인덱스 스티커 아이템 클릭
+        target_item = page.locator(f"button.se-sidebar-element-sticker[data-index='{idx}']").first
+        if target_item.is_visible(timeout=2000):
+            target_item.click()
             page.wait_for_timeout(1000)
-            
-            # 스티커 팝업/패널에서 스티커 클릭
-            # 첫 번째 또는 두 번째 스티커 아이템 클릭
-            sticker_item = page.locator(".se-sticker-list button, .se-sticker-item, .se-popup-sticker img").first
-            if sticker_item.is_visible(timeout=2000):
-                sticker_item.click()
-                print(f"스티커 삽입 완료 ({sticker_type})")
-                page.wait_for_timeout(800)
-            else:
-                # 닫기
-                sticker_btn.click()
+            print(f"여우 스티커 삽입 완료 ({sticker_type})")
+        else:
+            print(f"경고: 스티커 index {idx}를 찾지 못했습니다.")
+
+        # 사이드바 닫기
+        close_btn = page.locator("button.se-sidebar-close-button").first
+        if close_btn.is_visible(timeout=2000):
+            close_btn.click()
+            page.wait_for_timeout(500)
+
+        # 스티커 항상 가운데 정렬 적용
+        sticker_el = page.locator(".se-component-sticker, .se-sticker").last
+        if sticker_el.count() > 0:
+            sticker_el.click(force=True)
+            page.wait_for_timeout(300)
+            center_btn = page.locator("button.se-align-center-toolbar-button").first
+            if center_btn.is_visible(timeout=1500):
+                center_btn.click(force=True)
+                page.wait_for_timeout(300)
+                print(f"스티커 가운데 정렬 적용 완료 ({sticker_type})")
+
+        # 캔버스 아래 클릭하여 포커스 복원 및 선택 해제
+        page.keyboard.press("Escape")
+        page.wait_for_timeout(150)
+        try:
+            page.locator(".se-canvas, .se-body").first.click(position={"x": 300, "y": 900}, force=True)
+        except Exception:
+            pass
+        page.wait_for_timeout(200)
+        page.keyboard.press("Enter")
+        page.wait_for_timeout(150)
     except Exception as e:
-        print(f"스티커 삽입 건너뜀: {e}")
+        print(f"스티커 삽입 예외: {e}")
 
 
 def insert_image(page, img_path: Path):
@@ -527,19 +872,31 @@ def main():
     draft_parser = subparsers.add_parser("draft", help="마크다운 원고를 네이버 에디터에 주입 후 임시저장")
     draft_parser.add_argument("--file", "-f", required=True, help="작성된 마크다운 포스트 파일 경로")
     draft_parser.add_argument("--category", "-c", help="카테고리명 오버라이드")
+    draft_parser.add_argument("--headless", action="store_true", help="브라우저 창을 띄우지 않고 백그라운드에서 실행")
 
     args = parser.parse_args()
 
     if args.command == "login":
         login_helper()
     elif args.command == "draft":
-        post_file = Path(args.file)
-        if not post_file.is_absolute():
-            post_file = WORKSPACE_DIR / post_file
-        if not post_file.exists():
-            print(f"오류: 파일을 찾을 수 없습니다: {post_file}")
+        target_path = Path(args.file)
+        if not target_path.is_absolute():
+            target_path = WORKSPACE_DIR / target_path
+        if not target_path.exists():
+            print(f"오류: 파일을 찾을 수 없습니다: {target_path}")
             sys.exit(1)
-        draft_post(post_file, args.category)
+
+        if target_path.is_dir():
+            md_files = [f for f in target_path.glob("*.md") if not f.name.startswith(".")]
+            if not md_files:
+                print(f"오류: 해당 디렉터리 내에 마크다운 포스트(.md) 파일이 없습니다: {target_path}")
+                sys.exit(1)
+            post_file = md_files[0]
+            print(f"[*] 디렉터리 감지: {post_file.name} 파일을 대상으로 자동 지정합니다.")
+        else:
+            post_file = target_path
+
+        draft_post(post_file, args.category, headless=args.headless)
     else:
         parser.print_help()
 

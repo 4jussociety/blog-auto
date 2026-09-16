@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>[미리보기] 선생님 근무하는 날로 4주 예약할게요&#x27; 병원 시절 저를 믿고 찾아주셨던 5가지 이유 (feat. 실제 후기)</title>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+    <style>
+        :root {
+            --font-main: "Pretendard", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Nanum Gothic", sans-serif;
+            --bg-page: #f1f3f5;
+            --bg-card: #ffffff;
+            --primary-green: #00a84b;
+            --primary-red: #ba0000;
+            --primary-blue: #004e82;
+            --text-title: #111827;
+            --text-body: #222222;
+            --border-light: #e5e7eb;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-page);
+            font-family: var(--font-main);
+            color: var(--text-body);
+            -webkit-font-smoothing: antialiased;
+            padding-bottom: 80px;
+        }
+
+        /* 상단 제어 바 */
+        .preview-topbar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-light);
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+
+        .topbar-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-badge {
+            background: #e8f7ee;
+            color: var(--primary-green);
+            font-size: 13px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 6px;
+        }
+
+        .status-text {
+            font-size: 14px;
+            color: #6b7280;
+            font-weight: 500;
+        }
+
+        .topbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .view-btn {
+            background: #f3f4f6;
+            border: 1px solid var(--border-light);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #4b5563;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .view-btn.active {
+            background: #111827;
+            color: #ffffff;
+            border-color: #111827;
+        }
+
+        /* 메인 컨테이너 */
+        .preview-layout {
+            max-width: 820px;
+            margin: 30px auto;
+            padding: 0 16px;
+            transition: max-width 0.3s ease;
+        }
+
+        .preview-layout.mobile-mode {
+            max-width: 440px;
+        }
+
+        .post-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.05);
+            padding: 44px 36px;
+            border: 1px solid var(--border-light);
+        }
+
+        .preview-layout.mobile-mode .post-card {
+            padding: 30px 20px;
+            border-radius: 24px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 헤더 영역 */
+        .post-header {
+            border-bottom: 1px solid #f3f4f6;
+            padding-bottom: 24px;
+            margin-bottom: 32px;
+        }
+
+        .category-text {
+            font-size: 15px;
+            color: #6b7280;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .post-title {
+            font-size: 28px;
+            line-height: 1.4;
+            font-weight: 800;
+            color: var(--text-title);
+            letter-spacing: -0.02em;
+        }
+
+        .preview-layout.mobile-mode .post-title {
+            font-size: 23px;
+        }
+
+        /* 본문 타이포그래피 (19pt 기본) */
+        .post-content {
+            font-size: 19pt; /* 25px */
+            line-height: 1.85;
+            color: #222222;
+            word-break: keep-all;
+            overflow-wrap: break-word;
+        }
+
+        .se-paragraph {
+            margin-bottom: 8px;
+            font-size: 19pt;
+            letter-spacing: -0.01em;
+        }
+
+        .se-spacer {
+            height: 22px;
+        }
+
+        /* 소제목 (30pt 볼드) */
+        .se-section-title {
+            font-size: 30pt; /* 40px */
+            font-weight: 800;
+            line-height: 1.4;
+            color: #111827;
+            margin: 44px 0 18px 0;
+            letter-spacing: -0.02em;
+        }
+
+        .preview-layout.mobile-mode .se-section-title {
+            font-size: 24pt;
+        }
+
+        /* 형광펜 */
+        .preview-highlight {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+            box-decoration-break: clone;
+            -webkit-box-decoration-break: clone;
+        }
+
+        /* 인라인 글자색 */
+        .preview-color {
+            font-weight: 700;
+        }
+
+        /* 스티커 (가운데 정렬) */
+        .se-sticker-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 28px 0;
+        }
+
+        .se-sticker-img {
+            width: 170px;
+            height: auto;
+            display: block;
+            filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.04));
+        }
+
+        /* 인용구 박스 */
+        .se-quote-box {
+            background: #fafafa;
+            border: 1px solid #eeeeee;
+            border-radius: 12px;
+            padding: 24px 28px;
+            margin: 30px 0;
+            text-align: center;
+            position: relative;
+        }
+
+        .quote-mark {
+            font-size: 36px;
+            line-height: 1;
+            color: #c5cbd5;
+            font-family: Georgia, serif;
+            font-weight: 700;
+        }
+
+        .quote-open {
+            margin-bottom: 6px;
+        }
+
+        .quote-close {
+            margin-top: 6px;
+        }
+
+        .quote-content {
+            font-size: 19pt;
+            font-style: italic;
+            color: #374151;
+            line-height: 1.7;
+            font-weight: 500;
+        }
+
+        /* 이미지 컨테이너 */
+        .se-image-wrapper {
+            display: flex;
+            justify-content: center;
+            margin: 32px 0;
+        }
+
+        .image-container {
+            position: relative;
+            max-width: 100%;
+            display: inline-block;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+        }
+
+        .se-post-image {
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .rep-badge {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            background: #03c75a;
+            color: #ffffff;
+            font-size: 13px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 6px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            letter-spacing: -0.02em;
+        }
+
+        /* 구분선 */
+        .se-divider {
+            border: none;
+            border-top: 1px solid #e5e7eb;
+            margin: 40px 0;
+        }
+
+        /* 태그 영역 */
+        .post-tags {
+            margin-top: 48px;
+            padding-top: 24px;
+            border-top: 1px solid #f3f4f6;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .tag-chip {
+            background: #f3f4f6;
+            color: #4b5563;
+            font-size: 14px;
+            font-weight: 600;
+            padding: 6px 12px;
+            border-radius: 20px;
+        }
+
+        /* 푸터 안내 */
+        .preview-footer {
+            text-align: center;
+            margin-top: 40px;
+            color: #9ca3af;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 상단 툴바 -->
+    <header class="preview-topbar">
+        <div class="topbar-info">
+            <span class="brand-badge">리무브 체형교정</span>
+            <span class="status-text">네이버 스마트에디터 ONE 실시간 프리뷰 (19pt 기본글꼴)</span>
+        </div>
+        <div class="topbar-actions">
+            <button id="btnPc" class="view-btn active" onclick="setViewMode('pc')">💻 데스크톱 (720px)</button>
+            <button id="btnMobile" class="view-btn" onclick="setViewMode('mobile')">📱 모바일 (430px)</button>
+        </div>
+    </header>
+
+    <!-- 프리뷰 본체 -->
+    <main id="layoutContainer" class="preview-layout">
+        <article class="post-card">
+            <header class="post-header">
+                <div class="category-text">📁 리무브 교정사례 &gt; 고객 후기</div>
+                <h1 class="post-title">선생님 근무하는 날로 4주 예약할게요&#x27; 병원 시절 저를 믿고 찾아주셨던 5가지 이유 (feat. 실제 후기)</h1>
+            </header>
+
+            <div class="post-content">
+                
+            <div class="se-sticker-wrapper">
+                <img src="https://storep-phinf.pstatic.net/cafe_004/original_1.png" alt="여우 스티커 (greeting)" class="se-sticker-img" />
+            </div>
+            
+<div class="se-spacer"></div>
+<p class="se-paragraph">안녕하세요.</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">물리치료사 출신 체형교정 전문가, <strong>리무브 체형교정 대표 원장</strong>입니다.</p>
+<div class="se-spacer"></div>
+
+            <div class="se-image-wrapper">
+                <div class="image-container">
+                    <span class="rep-badge">대표</span>
+                    <img src="images/01_원장_프로필.png" alt="본문 이미지 1" class="se-post-image" loading="lazy" />
+                </div>
+            </div>
+            
+<div class="se-spacer"></div>
+<p class="se-paragraph">지난 1편 글에서는 제가 왜 수년간 일해온 안정적인 병원을 나와 구리 갈매동에 &#x27;리무브 체형교정&#x27;을 열게 되었는지, 그 솔직한 비하인드 스토리를 들려드렸습니다.</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">오늘은 병원 도수치료실에 근무하던 시절, <strong>&quot;선생님 계시는 날로 4주 예약할게요&quot;</strong>라며 저를 콕 집어 지명해 주셨던 고객분들의 실제 후기 5선과 함께, 제가 어떤 원칙으로 체형을 케어해 왔는지 말씀드리려 합니다.</p>
+<div class="se-spacer"></div>
+<hr class="se-divider" />
+<div class="se-spacer"></div>
+<h3 class="se-section-title">1. &quot;통증 부위를 기가 막히게 잘 짚어주십니다&quot;</h3>
+<div class="se-spacer"></div>
+
+            <div class="se-image-wrapper">
+                <div class="image-container">
+                    
+                    <img src="images/02_리뷰4.png" alt="본문 이미지 2" class="se-post-image" loading="lazy" />
+                </div>
+            </div>
+            
+<div class="se-spacer"></div>
+<p class="se-paragraph">목과 어깨 통증으로 병원을 찾으셨던 회원님의 후기입니다.</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">도수치료나 마사지를 받아보신 분들은 아실 겁니다. 어떤 곳에 가면 아픈 부위 주변만 슬렁슬렁 문지르다 끝나 허무했던 경험이 있으실 겁니다.</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">저는 겉으로 드러난 통증 부위만 보지 않습니다. 목이 아프다고 목만 만지는 것은 하수입니다. 목을 앞으로 잡아끄는 가슴 앞쪽(소흉근), 날개뼈를 뒤틀리게 만드는 근육, 그리고 상부 경추의 압박을 정확히 짚어내야 합니다.</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">핵심 문제 지점(Trigger Point)과 유착된 신경 통로를 정밀하게 타깃팅하면, <strong>오랜 시간 힘들이지 않고도 굳었던 근육이 빠르게 풀리며 뻣뻣했던 움직임이 편안해집니다.</strong></p>
+<div class="se-spacer"></div>
+<hr class="se-divider" />
+<div class="se-spacer"></div>
+<h3 class="se-section-title">2. &quot;자세와 운동법을 구체적으로 알려주셔서 4주 고정 예약을 했습니다&quot;</h3>
+<div class="se-spacer"></div>
+
+            <div class="se-image-wrapper">
+                <div class="image-container">
+                    
+                    <img src="images/03_리뷰2.png" alt="본문 이미지 3" class="se-post-image" loading="lazy" />
+                </div>
+            </div>
+            
+<div class="se-spacer"></div>
+<p class="se-paragraph">골반 틀어짐과 허리 불편감으로 찾아주셨던 회원님의 리뷰입니다. 제 교정 철학을 가장 잘 보여주는 소중한 후기입니다.</p>
+<div class="se-spacer"></div>
+
+            <div class="se-quote-box">
+                <div class="quote-mark quote-open">“</div>
+                <p class="quote-content">베드에 가만히 누워서 마사지만 받고 끝나는 관리는, 문을 열고 나서는 순간 제자리로 돌아갑니다.</p>
+                <div class="quote-mark quote-close">”</div>
+            </div>
+            
+<div class="se-spacer"></div>
+<p class="se-paragraph">전문가가 아무리 손으로 뼈를 맞추고 근육을 풀어놓아도, 일상으로 돌아가 다리를 꼬거나 짝다리를 짚으면 뇌는 원래의 &#x27;틀어진 자세&#x27;로 몸을 되돌려 놓습니다.</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">그래서 저는 손으로 급한 긴장을 풀고 나면, <strong>남은 시간의 상당 부분을 &#x27;회원님 몸의 1:1 맞춤 사용설명서&#x27;를 가르쳐 드리는 데 씁니다.</strong></p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">- 왜 내 골반이 틀어졌는지</p>
+<p class="se-paragraph">- 의자에 앉을 때 골반을 어떻게 지탱해야 하는지</p>
+<p class="se-paragraph">- 집에서 하루 3분 꼭 해줘야 하는 맞춤 안정화 운동이 무엇인지</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">회원님 스스로 내 몸의 주인이 되어 바른 정렬을 유지할 수 있게 만들어 드리는 것이 저의 원칙입니다.</p>
+<div class="se-spacer"></div>
+<hr class="se-divider" />
+<div class="se-spacer"></div>
+<h3 class="se-section-title">3. &quot;물리치료만 받다 도수치료를 받았는데, 한 번만으로 목이 한결 편해졌어요&quot;</h3>
+<div class="se-spacer"></div>
+
+            <div class="se-image-wrapper">
+                <div class="image-container">
+                    
+                    <img src="images/04_리뷰1.png" alt="본문 이미지 4" class="se-post-image" loading="lazy" />
+                </div>
+            </div>
+            
+<div class="se-spacer"></div>
+<p class="se-paragraph">출산 후 육아로 뒷목과 어깨가 완전히 굳어버렸던 회원님의 후기입니다.</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">목이 뻐근할 때 핫팩이나 단순 전기 물리치료만 수 주간 반복해서 받으시는 분들이 많습니다. 물론 온열 관리도 순환을 돕지만, <strong>틀어진 뼈의 정렬과 신경 압박은 기계 관리만으로는 풀리지 않습니다.</strong></p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">특히 출산 후에는 관절을 잡아주는 인대가 느슨해진 상태에서 아기를 안다 보니 목과 등의 축이 무너지기 쉽습니다.</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">이때는 단순 온찜질이 아니라, <strong>느슨해진 곳은 안정화하고 과긴장된 후두하근과 신경 길을 터주는 정밀한 손기술</strong>이 들어가야 단 한 번의 케어로도 고개가 가볍게 돌아가는 변화를 느끼실 수 있습니다.</p>
+<div class="se-spacer"></div>
+<hr class="se-divider" />
+<div class="se-spacer"></div>
+<h3 class="se-section-title">4. &quot;과잉 진료 없이 항상 편안하게 갈 수 있는 곳&quot;</h3>
+<div class="se-spacer"></div>
+
+            <div class="se-image-wrapper">
+                <div class="image-container">
+                    
+                    <img src="images/05_리뷰3.png" alt="본문 이미지 5" class="se-post-image" loading="lazy" />
+                </div>
+            </div>
+            
+<div class="se-spacer"></div>
+<p class="se-paragraph">체형교정 센터나 관리실을 찾을 때 가장 두려운 것 중 하나가 바로 &#x27;무리한 장기 등록 강요&#x27;와 &#x27;공포 마케팅&#x27;일 것입니다.</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">&quot;지금 당장 30회 안 끊으면 큰일 난다&quot;는 식의 상업적인 마케팅에 지치셨던 분들이 저를 찾아오셔서 가장 안도하셨던 부분입니다.</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">저는 불필요한 장기 등록을 권하지 않습니다. 굳이 많은 횟수가 필요 없는 가벼운 긴장은 몇 번의 집중 케어와 맞춤 재활운동 지도만으로 스스로 일상을 되찾고 졸업할 수 있도록 돕습니다.</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">상업적인 부담 대신, <strong>&quot;이곳에 오면 무조건 괜찮아질 수 있다&quot;는 확신</strong>을 드리는 것이 제 신념입니다.</p>
+<div class="se-spacer"></div>
+<hr class="se-divider" />
+<div class="se-spacer"></div>
+<h3 class="se-section-title">5. &quot;갱년기 증상으로 온몸 관절이 아팠는데, 증세가 정말 많이 좋아졌어요&quot;</h3>
+<div class="se-spacer"></div>
+
+            <div class="se-image-wrapper">
+                <div class="image-container">
+                    
+                    <img src="images/06_리뷰5.png" alt="본문 이미지 6" class="se-post-image" loading="lazy" />
+                </div>
+            </div>
+            
+<div class="se-spacer"></div>
+<p class="se-paragraph">50대 전후 갱년기가 찾아오면 호르몬 변화로 전신의 인대와 관절막이 건조해지고 뻣뻣해집니다. 어깨, 팔꿈치, 고관절, 무릎 할 것 없이 쑤시고 아프죠.</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">많은 분들이 &quot;나이 탓이겠거니...&quot; 하고 파스로 버티십니다.</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">하지만 나이가 들수록 가장 중요한 것은 관절의 <strong>&#x27;가동성(Mobility)&#x27;</strong>입니다. 굳어가는 관절낭의 유착을 관절 역학(오목-볼록 법칙)에 맞게 안전하게 열어주고 주변 근막을 정렬해 주면, 나이와 상관없이 가볍고 부드러운 움직임을 되찾을 수 있습니다.</p>
+<div class="se-spacer"></div>
+<hr class="se-divider" />
+<div class="se-spacer"></div>
+<h3 class="se-section-title">🌿 &quot;불편함을 Remove, 내 몸을 Re-move&quot;</h3>
+<div class="se-spacer"></div>
+
+            <div class="se-image-wrapper">
+                <div class="image-container">
+                    
+                    <img src="images/07_로고1.png" alt="본문 이미지 7" class="se-post-image" loading="lazy" />
+                </div>
+            </div>
+            
+<div class="se-spacer"></div>
+
+            <div class="se-quote-box">
+                <div class="quote-mark quote-open">“</div>
+                <p class="quote-content"><strong>&quot;불편함을 Remove, 내 몸을 Re-move&quot;</strong></p>
+                <div class="quote-mark quote-close">”</div>
+            </div>
+            
+<div class="se-spacer"></div>
+<p class="se-paragraph">오랜 시간 여러분을 괴롭혀온 틀어짐의 불편함은 깨끗하게 제거(<strong>Remove</strong>)하고,</p>
+<p class="se-paragraph">굳어버린 신체에 본래의 바르고 자유로운 움직임을 다시(<strong>Re-move</strong>) 선물해 드리겠습니다.</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">오늘 회원님에게 필요한 과정을 반쪽짜리로 쪼개지 않고, 1:1로 온 정성을 다해 집중 케어해 드립니다.</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">내 몸의 상태가 궁금하시거나 만성적인 불편함으로 고민하고 계시다면 언제든 편하게 문을 두드려 주세요.</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">긴 글 읽어주셔서 진심으로 감사합니다.</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph"><strong>[리무브 체형교정 찾아오시는 길]</strong></p>
+<p class="se-paragraph">📍 경기 구리시 갈매순환로 154 갈매현대테라타워 S동 L104호</p>
+<p class="se-paragraph">💬 문의/예약: 네이버 톡톡 또는 댓글로 편하게 남겨주세요.</p>
+<div class="se-spacer"></div>
+
+            <div class="se-sticker-wrapper">
+                <img src="https://storep-phinf.pstatic.net/cafe_004/original_13.png" alt="여우 스티커 (cheering)" class="se-sticker-img" />
+            </div>
+            
+            </div>
+
+            <footer class="post-tags">
+                <span class="tag-chip">#리무브체형교정</span><span class="tag-chip">#구리체형교정</span><span class="tag-chip">#갈매체형교정</span><span class="tag-chip">#물리치료사출신</span><span class="tag-chip">#체형교정센터</span><span class="tag-chip">#골반교정</span><span class="tag-chip">#체형분석</span><span class="tag-chip">#재활운동</span><span class="tag-chip">#자세교정</span><span class="tag-chip">#거북목교정</span><span class="tag-chip">#체형교정후기</span><span class="tag-chip">#체형관리</span>
+            </footer>
+        </article>
+
+        <div class="preview-footer">
+            🌿 리무브 체형교정 블로그 자동화 시스템 | 스마트에디터 ONE 주입 전 검토용 프리뷰
+        </div>
+    </main>
+
+    <script>
+        function setViewMode(mode) {
+            const layout = document.getElementById('layoutContainer');
+            const btnPc = document.getElementById('btnPc');
+            const btnMobile = document.getElementById('btnMobile');
+
+            if (mode === 'mobile') {
+                layout.classList.add('mobile-mode');
+                btnMobile.classList.add('active');
+                btnPc.classList.remove('active');
+            } else {
+                layout.classList.remove('mobile-mode');
+                btnPc.classList.add('active');
+                btnMobile.classList.remove('active');
+            }
+        }
+    </script>
+</body>
+</html>

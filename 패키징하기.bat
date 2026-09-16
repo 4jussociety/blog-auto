@@ -1,6 +1,6 @@
 @echo off
 rem 기능: 블로그 원고와 이미지를 output 폴더에 번호순으로 자동 패키징하는 실행 배치 파일
-rem 목적: 더블클릭 한 번으로 md파일 2종과 정렬된 사진들을 output 폴더에 생성합니다.
+rem 목적: 더블클릭 한 번으로 단일 통합 원고와 정렬된 사진들을 output 폴더에 생성합니다.
 
 chcp 65001 > nul
 set PYTHONUTF8=1
