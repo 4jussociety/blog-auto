@@ -21,25 +21,20 @@ if sys.stdout and hasattr(sys.stdout, "reconfigure"):
 BASE_DIR = Path(__file__).resolve().parent.parent
 OUTPUT_DIR = BASE_DIR / "output"
 ASSETS_DIR = BASE_DIR / "assets"
-IMAGES_DIR = BASE_DIR / "images"
-ASSESTS_DIR = BASE_DIR / "assests"
 
 
 def find_image_file(rel_path_str: str) -> Path | None:
-    """assets, images, assests 폴더 등에서 파일 이름으로 이미지를 검색합니다."""
+    """assets 폴더 등에서 파일 이름으로 이미지를 검색합니다."""
     clean_name = Path(rel_path_str).name
     # 1. 직접 상대경로 확인
     direct = BASE_DIR / rel_path_str
     if direct.exists() and direct.is_file():
         return direct
 
-    # 2. 주요 에셋 폴더 검색
+    # 2. assets 에셋 폴더 검색
     candidates = [
         ASSETS_DIR / clean_name,
         ASSETS_DIR / "리뷰" / clean_name,
-        IMAGES_DIR / clean_name,
-        ASSESTS_DIR / clean_name,
-        ASSESTS_DIR / "리뷰" / clean_name,
     ]
     for c in candidates:
         if c.exists() and c.is_file():

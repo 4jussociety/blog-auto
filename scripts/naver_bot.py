@@ -513,11 +513,8 @@ def resolve_image_path(rel_path_str: str, post_dir: Path = None) -> Path | None:
         return direct
     
     candidates = [
-        WORKSPACE_DIR / "images" / clean_name,
         WORKSPACE_DIR / "assets" / clean_name,
         WORKSPACE_DIR / "assets" / "리뷰" / clean_name,
-        WORKSPACE_DIR / "assests" / clean_name,
-        WORKSPACE_DIR / "assests" / "리뷰" / clean_name,
     ]
     for c in candidates:
         if c.exists() and c.is_file():
