@@ -887,12 +887,21 @@ def main():
             sys.exit(1)
 
         if target_path.is_dir():
-            md_files = [f for f in target_path.glob("*.md") if not f.name.startswith(".")]
+            md_files = [f for f in target_path.glob("*.md") if not f.name.startswith(".") and f.name != "README.md"]
+            if not md_files:
+                # 하위 폴더 중 최신 수정된 폴더의 md 검색
+                sub_dirs = sorted([d for d in target_path.glob("*") if d.is_dir()], key=os.path.getmtime, reverse=True)
+                for sd in sub_dirs:
+                    sub_mds = [f for f in sd.glob("*.md") if not f.name.startswith(".") and f.name != "README.md"]
+                    if sub_mds:
+                        md_files = sub_mds
+                        break
+
             if not md_files:
                 print(f"오류: 해당 디렉터리 내에 마크다운 포스트(.md) 파일이 없습니다: {target_path}")
                 sys.exit(1)
             post_file = md_files[0]
-            print(f"[*] 디렉터리 감지: {post_file.name} 파일을 대상으로 자동 지정합니다.")
+            print(f"[*] 대상 원고 자동 감지: {post_file.name}")
         else:
             post_file = target_path
 
