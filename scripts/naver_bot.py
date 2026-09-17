@@ -417,6 +417,54 @@ def parse_line_segments(line: str):
     return tokens
 
 
+def ensure_font_size_19(page):
+    """현재 활성화된 단락의 글자 크기를 19pt로 설정/복원합니다."""
+    try:
+        fs_btn = page.locator("button[data-name='font-size'], button.se-font-size-toolbar-button").first
+        if not fs_btn.is_visible(timeout=800):
+            return
+
+        # ⚡ 속도 최적화: 이미 19pt라면 드롭다운을 열지 않고 바로 통과
+        btn_text = fs_btn.inner_text().strip()
+        if "19" in btn_text:
+            return
+
+        fs_btn.click(force=True)
+        page.wait_for_timeout(150)
+        opt19 = page.locator("button.se-toolbar-option-font-size-code-fs19-button, button:has-text('19')").first
+        if opt19.is_visible(timeout=1000):
+            opt19.click(force=True)
+            page.wait_for_timeout(150)
+    except Exception:
+        pass
+
+
+def ensure_center_align(page):
+    """현재 활성화된 단락을 가운데 정렬로 설정합니다."""
+    try:
+        center_btn = page.locator("button.se-align-center-toolbar-button, button[data-name='align-center']").first
+        if not center_btn.is_visible(timeout=800):
+            return
+
+        # 이미 가운데 정렬이 활성화되어 있다면 중복 클릭 방지 (토글 풀림 방지)
+        is_pressed = center_btn.get_attribute("aria-pressed") == "true"
+        is_selected = center_btn.get_attribute("aria-selected") == "true"
+        class_name = center_btn.get_attribute("class") or ""
+        if is_pressed or is_selected or "selected" in class_name or "active" in class_name:
+            return
+
+        center_btn.click(force=True)
+        page.wait_for_timeout(100)
+    except Exception:
+        pass
+
+
+def ensure_paragraph_style(page):
+    """현재 활성화된 단락의 글자 크기를 19pt, 정렬을 가운데 정렬로 설정/복원합니다."""
+    ensure_font_size_19(page)
+    ensure_center_align(page)
+
+
 def type_rich_paragraph(page, segments):
     """(text, hl_color, font_color, is_bold) 세그먼트를 19pt 단락에 입력하고 서식 적용"""
     try:
@@ -430,6 +478,7 @@ def type_rich_paragraph(page, segments):
             pass
 
     page.wait_for_timeout(80)
+    ensure_paragraph_style(page)
 
     for text, hl_color, font_color, is_bold in segments:
         if not text:
@@ -537,19 +586,9 @@ def enter_body(page, body: str, post_dir: Path = None):
         page.keyboard.press("Tab")
         page.wait_for_timeout(500)
 
-    # 본문 기본 글자 크기를 19pt로 설정
-    try:
-        fs_btn = page.locator("button[data-name='font-size']").first
-        if fs_btn.is_visible(timeout=2500):
-            fs_btn.click()
-            page.wait_for_timeout(300)
-            opt19 = page.locator("button.se-toolbar-option-font-size-code-fs19-button, button:has-text('19')").first
-            if opt19.is_visible(timeout=2000):
-                opt19.click()
-                page.wait_for_timeout(300)
-                print("[*] 본문 기본 글자 크기: 19pt 설정 완료")
-    except Exception as e:
-        print(f"19pt 폰트 설정 건너뜀: {e}")
+    # 본문 기본 글자 크기(19pt) 및 가운데 정렬 설정
+    ensure_paragraph_style(page)
+    print("[*] 본문 기본 서식: 19pt + 중앙 정렬 설정 완료")
 
     lines = body.splitlines()
     in_tag_quote = False
@@ -629,9 +668,9 @@ def enter_body(page, body: str, post_dir: Path = None):
             page.wait_for_timeout(50)
             continue
 
-        # 6. 소제목 (#, ##, ###) 처리 -> 30pt 소제목 서식 적용
-        if stripped.startswith("#"):
-            clean_heading = stripped.lstrip("#").strip()
+        # 6. 소제목 (#, ##, ###) 처리 -> 뒤에 공백이 있는 정규 헤더만 30pt 소제목 서식 적용 (태그 #a #b 등은 본문 타이핑으로 통과)
+        if re.match(r"^#{1,6}\s+", stripped):
+            clean_heading = re.sub(r"^#{1,6}\s+", "", stripped).strip()
             insert_heading(page, clean_heading)
             continue
 
@@ -663,18 +702,14 @@ def insert_heading(page, heading_text: str):
         subtitle_btn.click()
         page.wait_for_timeout(350)
 
+        # 소제목 자체도 가운데 정렬 적용
+        ensure_center_align(page)
+
         page.keyboard.press("Enter")
         page.wait_for_timeout(200)
 
-        # 소제목 엔터 후 다음 본문 문단 글자 크기를 19pt로 복원
-        fs_btn = page.locator("button[data-name='font-size']").first
-        if fs_btn.is_visible(timeout=1500):
-            fs_btn.click()
-            page.wait_for_timeout(250)
-            opt19 = page.locator("button.se-toolbar-option-font-size-code-fs19-button, button:has-text('19')").first
-            if opt19.is_visible(timeout=1500):
-                opt19.click()
-                page.wait_for_timeout(200)
+        # 소제목 엔터 후 다음 본문 문단 글자 크기(19pt) 및 가운데 정렬 복원
+        ensure_paragraph_style(page)
 
         print(f"소제목 적용 완료 (30pt): {heading_text[:20]}...")
     except Exception as e:
@@ -691,9 +726,11 @@ def insert_divider(page):
             page.wait_for_timeout(500)
             page.keyboard.press("Enter")
             page.wait_for_timeout(300)
+            ensure_paragraph_style(page)
             print("구분선 삽입 완료")
         else:
             page.keyboard.press("Enter")
+            ensure_paragraph_style(page)
     except Exception as e:
         print(f"구분선 삽입 건너뜀: {e}")
 
@@ -718,10 +755,12 @@ def insert_quote(page, quote_text: str):
             except Exception:
                 pass
             page.wait_for_timeout(200)
+            ensure_paragraph_style(page)
             print(f"인용구 삽입 완료: {quote_text[:20]}...")
         else:
             page.keyboard.type(f"💬 \"{quote_text}\"", delay=15)
             page.keyboard.press("Enter")
+            ensure_paragraph_style(page)
     except Exception as e:
         print(f"인용구 삽입 예외: {e}")
 
@@ -789,6 +828,7 @@ def insert_sticker(page, sticker_type: str = "greeting"):
         page.wait_for_timeout(200)
         page.keyboard.press("Enter")
         page.wait_for_timeout(150)
+        ensure_paragraph_style(page)
     except Exception as e:
         print(f"스티커 삽입 예외: {e}")
 
@@ -816,6 +856,8 @@ def insert_image(page, img_path: Path):
             print(f"이미지 업로드 완료: {img_path.name}")
             
         page.keyboard.press("Enter")
+        page.wait_for_timeout(200)
+        ensure_paragraph_style(page)
     except Exception as e:
         print(f"이미지 업로드 오류 ({img_path.name}): {e}")
 

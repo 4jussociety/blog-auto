@@ -222,9 +222,9 @@ def generate_preview_html(md_file_path: Path, output_html_path: Path = None) -> 
             body_html_parts.append('<div class="se-spacer"></div>')
             continue
 
-        # 소제목 (#, ##, ###)
-        if stripped.startswith("#"):
-            clean_heading = stripped.lstrip("#").strip()
+        # 소제목 (#, ##, ###) - 뒤에 공백이 있는 정규 마크다운 헤더만 소제목으로 처리 (태그 #a #b 등은 본문으로 통과)
+        if re.match(r"^#{1,6}\s+", stripped):
+            clean_heading = re.sub(r"^#{1,6}\s+", "", stripped).strip()
             rendered_h = render_inline_formatting(clean_heading)
             body_html_parts.append(f'<h3 class="se-section-title">{rendered_h}</h3>')
             continue
@@ -364,6 +364,7 @@ def generate_preview_html(md_file_path: Path, output_html_path: Path = None) -> 
             border-bottom: 1px solid #f3f4f6;
             padding-bottom: 24px;
             margin-bottom: 32px;
+            text-align: center;
         }}
 
         .category-text {{
@@ -371,6 +372,7 @@ def generate_preview_html(md_file_path: Path, output_html_path: Path = None) -> 
             color: #6b7280;
             font-weight: 600;
             margin-bottom: 12px;
+            text-align: center;
         }}
 
         .post-title {{
@@ -379,32 +381,35 @@ def generate_preview_html(md_file_path: Path, output_html_path: Path = None) -> 
             font-weight: 800;
             color: var(--text-title);
             letter-spacing: -0.02em;
+            text-align: center;
         }}
 
         .preview-layout.mobile-mode .post-title {{
             font-size: 23px;
         }}
 
-        /* 본문 타이포그래피 (19pt 기본) */
+        /* 본문 타이포그래피 (19pt 기본 + 중앙 정렬) */
         .post-content {{
             font-size: 19pt; /* 25px */
             line-height: 1.85;
             color: #222222;
             word-break: keep-all;
             overflow-wrap: break-word;
+            text-align: center;
         }}
 
         .se-paragraph {{
             margin-bottom: 8px;
             font-size: 19pt;
             letter-spacing: -0.01em;
+            text-align: center;
         }}
 
         .se-spacer {{
             height: 22px;
         }}
 
-        /* 소제목 (30pt 볼드) */
+        /* 소제목 (30pt 볼드 + 중앙 정렬) */
         .se-section-title {{
             font-size: 30pt; /* 40px */
             font-weight: 800;
@@ -412,6 +417,7 @@ def generate_preview_html(md_file_path: Path, output_html_path: Path = None) -> 
             color: #111827;
             margin: 44px 0 18px 0;
             letter-spacing: -0.02em;
+            text-align: center;
         }}
 
         .preview-layout.mobile-mode .se-section-title {{
@@ -533,6 +539,7 @@ def generate_preview_html(md_file_path: Path, output_html_path: Path = None) -> 
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
+            justify-content: center;
         }}
 
         .tag-chip {{
