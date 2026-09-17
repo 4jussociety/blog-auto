@@ -884,21 +884,27 @@ def main():
             sys.exit(1)
 
         if target_path.is_dir():
-            md_files = [f for f in target_path.glob("*.md") if not f.name.startswith(".") and f.name != "README.md"]
-            if not md_files:
-                # 하위 폴더 중 최신 수정된 폴더의 md 검색
+            target_post = target_path
+            # output 루트 디렉터리를 넘긴 경우 최신 포스트 폴더 선택
+            if (target_path / "2_업로드용.md").exists() is False and (target_path / "1_순수원고.md").exists() is False:
                 sub_dirs = sorted([d for d in target_path.glob("*") if d.is_dir()], key=os.path.getmtime, reverse=True)
-                for sd in sub_dirs:
-                    sub_mds = [f for f in sd.glob("*.md") if not f.name.startswith(".") and f.name != "README.md"]
-                    if sub_mds:
-                        md_files = sub_mds
-                        break
+                if sub_dirs:
+                    target_post = sub_dirs[0]
 
-            if not md_files:
-                print(f"오류: 해당 디렉터리 내에 마크다운 포스트(.md) 파일이 없습니다: {target_path}")
-                sys.exit(1)
-            post_file = md_files[0]
-            print(f"[*] 대상 원고 자동 감지: {post_file.name}")
+            # 2_업로드용.md 우선 선택 (없으면 1_순수원고를 제외한 마크다운 파일 탐색)
+            upload_md = target_post / "2_업로드용.md"
+            if upload_md.exists():
+                post_file = upload_md
+            else:
+                candidates = [f for f in target_post.glob("*.md") if f.name != "1_순수원고.md" and f.name != "README.md"]
+                if not candidates:
+                    candidates = list(target_post.glob("*.md"))
+                if not candidates:
+                    print(f"오류: 해당 디렉터리 내에 마크다운 포스트(.md) 파일이 없습니다: {target_path}")
+                    sys.exit(1)
+                post_file = candidates[0]
+
+            print(f"[*] 대상 업로드 원고 자동 감지: {post_file.name} ({post_file.parent.name})")
         else:
             post_file = target_path
 

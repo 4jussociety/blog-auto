@@ -113,16 +113,15 @@ def generate_preview_html(md_file_path: Path, output_html_path: Path = None) -> 
     content = md_file_path.read_text(encoding="utf-8")
     title, category, tags, body = parse_frontmatter(content)
 
-    stem = md_file_path.stem
     if not output_html_path:
-        # 파일이 이미 output 폴더 하위에 있다면 그 자리에 생성
+        # 파일이 이미 output 폴더 하위에 있다면 3_미리보기.html로 생성
         if "output" in md_file_path.parts:
-            output_html_path = md_file_path.parent / f"{stem}_미리보기.html"
+            output_html_path = md_file_path.parent / "3_미리보기.html"
         else:
-            # 루트에 있는 원고라면 output/<stem>/ 폴더로 자동 지정
+            stem = md_file_path.stem
             target_dir = WORKSPACE_DIR / "output" / stem
             target_dir.mkdir(parents=True, exist_ok=True)
-            output_html_path = target_dir / f"{stem}_미리보기.html"
+            output_html_path = target_dir / "3_미리보기.html"
 
     lines = body.splitlines()
     body_html_parts = []
@@ -627,33 +626,45 @@ def main():
     if args:
         arg = args[0]
         if arg == "--all":
-            # output 내 모든 활성 포스트에 대해 프리뷰 생성
-            for md in (WORKSPACE_DIR / "output").glob("*/*.md"):
-                if md.name != "README.md":
-                    res = generate_preview_html(md)
-                    generated_paths.append(res)
+            # output 내 모든 활성 포스트에 대해 2_업로드용.md 우선 프리뷰 생성
+            for p in (WORKSPACE_DIR / "output").glob("*"):
+                if p.is_dir():
+                    target_md = p / "2_업로드용.md"
+                    if not target_md.exists():
+                        candidates = [f for f in p.glob("*.md") if f.name != "1_순수원고.md" and f.name != "README.md"]
+                        if candidates:
+                            target_md = candidates[0]
+                    if target_md and target_md.exists():
+                        res = generate_preview_html(target_md)
+                        generated_paths.append(res)
         else:
             p = Path(arg)
             if not p.is_absolute():
                 p = WORKSPACE_DIR / p
             if p.is_dir():
-                md_files = list(p.glob("*.md"))
-                if md_files:
-                    res = generate_preview_html(md_files[0])
+                target_md = p / "2_업로드용.md"
+                if not target_md.exists():
+                    candidates = [f for f in p.glob("*.md") if f.name != "1_순수원고.md" and f.name != "README.md"]
+                    if candidates:
+                        target_md = candidates[0]
+                if target_md and target_md.exists():
+                    res = generate_preview_html(target_md)
                     generated_paths.append(res)
             elif p.is_file():
                 res = generate_preview_html(p)
                 generated_paths.append(res)
     else:
-        # 기본: output 내 최신 포스트 또는 1편 대상 생성
+        # 기본: output 내 최신 포스트 대상 생성
         output_dirs = sorted([d for d in (WORKSPACE_DIR / "output").glob("*") if d.is_dir()], key=os.path.getmtime, reverse=True)
         target = None
         if output_dirs:
-            md_candidates = list(output_dirs[0].glob("*.md"))
-            if md_candidates:
-                target = md_candidates[0]
-        if not target:
-            target = WORKSPACE_DIR / "output" / "2026-09-15_1편_안정적인_병원을_나와_리무브를_연_이유" / "2026-09-15_1편_안정적인_병원을_나와_리무브를_연_이유.md"
+            p = output_dirs[0]
+            target_md = p / "2_업로드용.md"
+            if not target_md.exists():
+                candidates = [f for f in p.glob("*.md") if f.name != "1_순수원고.md" and f.name != "README.md"]
+                if candidates:
+                    target_md = candidates[0]
+            target = target_md
 
         if target and target.exists():
             res = generate_preview_html(target)
