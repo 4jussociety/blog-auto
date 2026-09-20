@@ -546,7 +546,7 @@ def type_rich_paragraph(page, segments):
 
 
 def resolve_image_path(rel_path_str: str, post_dir: Path = None) -> Path | None:
-    """assets, images, assests 폴더 등에서 파일 이름 및 경로로 이미지를 검색합니다."""
+    """assets(로고, 프로필, 리뷰 등), images 폴더 등에서 파일 이름 및 경로로 이미지를 검색합니다."""
     clean_name = Path(rel_path_str).name
     # 0. 포스트 원고 파일이 위치한 폴더 기준 상대경로 우선 탐색
     if post_dir:
@@ -563,14 +563,22 @@ def resolve_image_path(rel_path_str: str, post_dir: Path = None) -> Path | None:
     
     candidates = [
         WORKSPACE_DIR / "assets" / clean_name,
+        WORKSPACE_DIR / "assets" / "로고" / clean_name,
+        WORKSPACE_DIR / "assets" / "프로필" / clean_name,
         WORKSPACE_DIR / "assets" / "리뷰" / clean_name,
+        WORKSPACE_DIR / "assets" / "에디터참조" / clean_name,
     ]
     for c in candidates:
         if c.exists() and c.is_file():
             return c
             
-    for p in WORKSPACE_DIR.rglob(clean_name):
+    # assets 폴더 내 우선 재귀 탐색
+    for p in (WORKSPACE_DIR / "assets").rglob(clean_name):
         if p.is_file():
+            return p
+
+    for p in WORKSPACE_DIR.rglob(clean_name):
+        if p.is_file() and not any(part.startswith(".") for part in p.parts):
             return p
             
     return None
@@ -594,6 +602,8 @@ def enter_body(page, body: str, post_dir: Path = None):
     in_tag_quote = False
     in_md_quote = False
     quote_buffer = []
+    in_html_comment = False
+    in_image_needed_block = False
 
     def flush_quotes():
         nonlocal in_tag_quote, in_md_quote, quote_buffer
@@ -605,6 +615,25 @@ def enter_body(page, body: str, post_dir: Path = None):
 
     for line in lines:
         stripped = line.strip()
+
+        # 0-A. HTML 주석 블록 처리 (<!-- ... --> 건너뜀)
+        if in_html_comment:
+            if "-->" in stripped:
+                in_html_comment = False
+            continue
+        if stripped.startswith("<!--"):
+            if not ("-->" in stripped and stripped.endswith("-->")):
+                in_html_comment = True
+            continue
+
+        # 0-B. 촬영 가이드 블록 처리 ([IMAGE_NEEDED] ... [/IMAGE_NEEDED] 건너뜀)
+        if in_image_needed_block:
+            if stripped.startswith("[/IMAGE_NEEDED]") or "[/IMAGE_NEEDED]" in stripped:
+                in_image_needed_block = False
+            continue
+        if stripped == "[IMAGE_NEEDED]" or (stripped.startswith("[IMAGE_NEEDED]") and not stripped.startswith("[IMAGE_NEEDED:")):
+            in_image_needed_block = True
+            continue
 
         # 1-A. [QUOTE] 태그 블록 처리
         if "[QUOTE]" in stripped:
@@ -660,6 +689,11 @@ def enter_body(page, body: str, post_dir: Path = None):
                 insert_image(page, img_path)
             else:
                 print(f"경고: 이미지 파일을 찾을 수 없습니다: {img_rel_path}")
+            continue
+
+        # 4-B. 촬영 예정 사진 마커 처리 (네이버 에디터 주입 시에는 건너뜀)
+        if stripped.startswith("[IMAGE_NEEDED:"):
+            print(f"[*] 촬영 예정 사진 마커 건너뜀: {stripped}")
             continue
 
         # 5. 빈 줄 처리 (모바일 가독성 엔터)
@@ -928,16 +962,20 @@ def main():
         if target_path.is_dir():
             target_post = target_path
             # output 루트 디렉터리를 넘긴 경우 최신 포스트 폴더 선택
-            if (target_path / "2_업로드용.md").exists() is False and (target_path / "1_순수원고.md").exists() is False:
+            if not (target_path / "원고.md").exists() and not (target_path / "2_업로드용.md").exists():
                 sub_dirs = sorted([d for d in target_path.glob("*") if d.is_dir()], key=os.path.getmtime, reverse=True)
                 if sub_dirs:
                     target_post = sub_dirs[0]
 
-            # 2_업로드용.md 우선 선택 (없으면 1_순수원고를 제외한 마크다운 파일 탐색)
-            upload_md = target_post / "2_업로드용.md"
-            if upload_md.exists():
-                post_file = upload_md
-            else:
+            # 원고.md 우선 선택 (없으면 2_업로드용.md 또는 후보 마크다운 탐색)
+            post_file = None
+            for preferred in ["원고.md", "2_업로드용.md"]:
+                candidate = target_post / preferred
+                if candidate.exists():
+                    post_file = candidate
+                    break
+
+            if not post_file:
                 candidates = [f for f in target_post.glob("*.md") if f.name != "1_순수원고.md" and f.name != "README.md"]
                 if not candidates:
                     candidates = list(target_post.glob("*.md"))

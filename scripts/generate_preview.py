@@ -129,6 +129,9 @@ def generate_preview_html(md_file_path: Path, output_html_path: Path = None) -> 
     in_md_quote = False
     quote_buffer = []
     image_count = 0
+    in_html_comment = False
+    in_image_needed_block = False
+    image_needed_buffer = []
 
     def flush_quotes():
         nonlocal in_tag_quote, in_md_quote, quote_buffer
@@ -147,6 +150,41 @@ def generate_preview_html(md_file_path: Path, output_html_path: Path = None) -> 
 
     for line in lines:
         stripped = line.strip()
+
+        # 0-A. HTML 주석 블록 처리 (<!-- ... --> 건너뜀)
+        if in_html_comment:
+            if "-->" in stripped:
+                in_html_comment = False
+            continue
+        if stripped.startswith("<!--"):
+            if not ("-->" in stripped and stripped.endswith("-->")):
+                in_html_comment = True
+            continue
+
+        # 0-B. 촬영 예정 사진 블록 처리 ([IMAGE_NEEDED] ... [/IMAGE_NEEDED])
+        if in_image_needed_block:
+            if stripped.startswith("[/IMAGE_NEEDED]") or "[/IMAGE_NEEDED]" in stripped:
+                in_image_needed_block = False
+                rendered_guide = "<br>".join(image_needed_buffer)
+                body_html_parts.append(f"""
+                <div class="se-image-placeholder">
+                    <div class="placeholder-box">
+                        <span class="placeholder-icon">📸</span>
+                        <span class="placeholder-title">[촬영 필요 사진 가이드]</span>
+                        <div class="placeholder-desc" style="text-align: left; margin-top: 8px; line-height: 1.6;">{rendered_guide}</div>
+                    </div>
+                </div>
+                """)
+                image_needed_buffer = []
+            else:
+                if stripped:
+                    image_needed_buffer.append(render_inline_formatting(stripped))
+            continue
+
+        if stripped == "[IMAGE_NEEDED]" or (stripped.startswith("[IMAGE_NEEDED]") and not stripped.startswith("[IMAGE_NEEDED:")):
+            in_image_needed_block = True
+            image_needed_buffer = []
+            continue
 
         # 인용구 블록 [QUOTE]
         if "[QUOTE]" in stripped:
@@ -212,6 +250,20 @@ def generate_preview_html(md_file_path: Path, output_html_path: Path = None) -> 
                 <div class="image-container">
                     {badge_html}
                     <img src="{img_rel_path}" alt="본문 이미지 {image_count}" class="se-post-image" loading="lazy" />
+                </div>
+            </div>
+            """)
+            continue
+
+        # 촬영 예정 사진 자리표시자
+        if stripped.startswith("[IMAGE_NEEDED:"):
+            desc = stripped.replace("[IMAGE_NEEDED:", "").replace("]", "").strip()
+            body_html_parts.append(f"""
+            <div class="se-image-placeholder">
+                <div class="placeholder-box">
+                    <span class="placeholder-icon">📷</span>
+                    <span class="placeholder-title">[촬영 예정 사진 자리]</span>
+                    <span class="placeholder-desc">{desc}</span>
                 </div>
             </div>
             """)
@@ -524,6 +576,45 @@ def generate_preview_html(md_file_path: Path, output_html_path: Path = None) -> 
             letter-spacing: -0.02em;
         }}
 
+        /* 촬영 예정 사진 플레이스홀더 */
+        .se-image-placeholder {{
+            display: flex;
+            justify-content: center;
+            margin: 28px 0;
+        }}
+
+        .placeholder-box {{
+            width: 100%;
+            max-width: 480px;
+            background: #f8fafc;
+            border: 2px dashed #94a3b8;
+            border-radius: 12px;
+            padding: 22px 20px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }}
+
+        .placeholder-icon {{
+            font-size: 26px;
+        }}
+
+        .placeholder-title {{
+            font-size: 14px;
+            font-weight: 700;
+            color: #00a84b;
+            letter-spacing: -0.3px;
+        }}
+
+        .placeholder-desc {{
+            font-size: 15px;
+            font-weight: 500;
+            color: #475569;
+            line-height: 1.5;
+        }}
+
         /* 구분선 */
         .se-divider {{
             border: none;
@@ -625,6 +716,19 @@ def generate_preview_html(md_file_path: Path, output_html_path: Path = None) -> 
 import webbrowser
 
 
+def find_target_markdown_in_dir(p: Path) -> Path | None:
+    """폴더 내에서 원고.md 또는 2_업로드용.md 또는 대표 마크다운을 찾습니다."""
+    for preferred in ["원고.md", "2_업로드용.md"]:
+        candidate = p / preferred
+        if candidate.exists() and candidate.is_file():
+            return candidate
+    candidates = [f for f in p.glob("*.md") if f.name not in ("1_순수원고.md", "README.md")]
+    if candidates:
+        return candidates[0]
+    all_md = list(p.glob("*.md"))
+    return all_md[0] if all_md else None
+
+
 def main():
     should_open = "--open" in sys.argv
     args = [a for a in sys.argv[1:] if a != "--open"]
@@ -633,14 +737,10 @@ def main():
     if args:
         arg = args[0]
         if arg == "--all":
-            # output 내 모든 활성 포스트에 대해 2_업로드용.md 우선 프리뷰 생성
+            # output 내 모든 활성 포스트에 대해 원고.md 우선 프리뷰 생성
             for p in (WORKSPACE_DIR / "output").glob("*"):
                 if p.is_dir():
-                    target_md = p / "2_업로드용.md"
-                    if not target_md.exists():
-                        candidates = [f for f in p.glob("*.md") if f.name != "1_순수원고.md" and f.name != "README.md"]
-                        if candidates:
-                            target_md = candidates[0]
+                    target_md = find_target_markdown_in_dir(p)
                     if target_md and target_md.exists():
                         res = generate_preview_html(target_md)
                         generated_paths.append(res)
@@ -649,11 +749,7 @@ def main():
             if not p.is_absolute():
                 p = WORKSPACE_DIR / p
             if p.is_dir():
-                target_md = p / "2_업로드용.md"
-                if not target_md.exists():
-                    candidates = [f for f in p.glob("*.md") if f.name != "1_순수원고.md" and f.name != "README.md"]
-                    if candidates:
-                        target_md = candidates[0]
+                target_md = find_target_markdown_in_dir(p)
                 if target_md and target_md.exists():
                     res = generate_preview_html(target_md)
                     generated_paths.append(res)
@@ -666,12 +762,7 @@ def main():
         target = None
         if output_dirs:
             p = output_dirs[0]
-            target_md = p / "2_업로드용.md"
-            if not target_md.exists():
-                candidates = [f for f in p.glob("*.md") if f.name != "1_순수원고.md" and f.name != "README.md"]
-                if candidates:
-                    target_md = candidates[0]
-            target = target_md
+            target = find_target_markdown_in_dir(p)
 
         if target and target.exists():
             res = generate_preview_html(target)
