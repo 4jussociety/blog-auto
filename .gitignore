@@ -14,5 +14,6 @@ venv/
 # Logs & temp debug
 *.log
 *debug*.png
+*test*.png
 .DS_Store
 Thumbs.db

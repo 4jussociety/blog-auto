@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>[미리보기] 치마가 자꾸 돌아가고 다리길이가 짝짝이에요&#x27; 골반 틀어짐 교정 전후 실제 사례 (feat. 1:1 맞춤 케어)</title>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+    <style>
+        :root {
+            --font-main: "Pretendard", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Nanum Gothic", sans-serif;
+            --bg-page: #f1f3f5;
+            --bg-card: #ffffff;
+            --primary-green: #00a84b;
+            --primary-red: #ba0000;
+            --primary-blue: #004e82;
+            --text-title: #111827;
+            --text-body: #222222;
+            --border-light: #e5e7eb;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-page);
+            font-family: var(--font-main);
+            color: var(--text-body);
+            -webkit-font-smoothing: antialiased;
+            padding-bottom: 80px;
+        }
+
+        /* 상단 제어 바 */
+        .preview-topbar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-light);
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+
+        .topbar-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-badge {
+            background: #e8f7ee;
+            color: var(--primary-green);
+            font-size: 13px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 6px;
+        }
+
+        .status-text {
+            font-size: 14px;
+            color: #6b7280;
+            font-weight: 500;
+        }
+
+        .topbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .view-btn {
+            background: #f3f4f6;
+            border: 1px solid var(--border-light);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #4b5563;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .view-btn.active {
+            background: #111827;
+            color: #ffffff;
+            border-color: #111827;
+        }
+
+        /* 메인 컨테이너 */
+        .preview-layout {
+            max-width: 820px;
+            margin: 30px auto;
+            padding: 0 16px;
+            transition: max-width 0.3s ease;
+        }
+
+        .preview-layout.mobile-mode {
+            max-width: 440px;
+        }
+
+        .post-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.05);
+            padding: 44px 36px;
+            border: 1px solid var(--border-light);
+        }
+
+        .preview-layout.mobile-mode .post-card {
+            padding: 30px 20px;
+            border-radius: 24px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 헤더 영역 */
+        .post-header {
+            border-bottom: 1px solid #f3f4f6;
+            padding-bottom: 24px;
+            margin-bottom: 32px;
+            text-align: center;
+        }
+
+        .category-text {
+            font-size: 15px;
+            color: #6b7280;
+            font-weight: 600;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .post-title {
+            font-size: 28px;
+            line-height: 1.4;
+            font-weight: 800;
+            color: var(--text-title);
+            letter-spacing: -0.02em;
+            text-align: center;
+        }
+
+        .preview-layout.mobile-mode .post-title {
+            font-size: 23px;
+        }
+
+        /* 본문 타이포그래피 (19pt 기본 + 중앙 정렬) */
+        .post-content {
+            font-size: 19pt; /* 25px */
+            line-height: 1.85;
+            color: #222222;
+            word-break: keep-all;
+            overflow-wrap: break-word;
+            text-align: center;
+        }
+
+        .se-paragraph {
+            margin-bottom: 8px;
+            font-size: 19pt;
+            letter-spacing: -0.01em;
+            text-align: center;
+        }
+
+        .se-spacer {
+            height: 22px;
+        }
+
+        /* 소제목 (30pt 볼드 + 중앙 정렬) */
+        .se-section-title {
+            font-size: 30pt; /* 40px */
+            font-weight: 800;
+            line-height: 1.4;
+            color: #111827;
+            margin: 44px 0 18px 0;
+            letter-spacing: -0.02em;
+            text-align: center;
+        }
+
+        .preview-layout.mobile-mode .se-section-title {
+            font-size: 24pt;
+        }
+
+        /* 형광펜 */
+        .preview-highlight {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+            box-decoration-break: clone;
+            -webkit-box-decoration-break: clone;
+        }
+
+        /* 인라인 글자색 */
+        .preview-color {
+            font-weight: 700;
+        }
+
+        /* 스티커 (가운데 정렬) */
+        .se-sticker-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 28px 0;
+        }
+
+        .se-sticker-img {
+            width: 170px;
+            height: auto;
+            display: block;
+            filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.04));
+        }
+
+        /* 인용구 박스 */
+        .se-quote-box {
+            background: #fafafa;
+            border: 1px solid #eeeeee;
+            border-radius: 12px;
+            padding: 24px 28px;
+            margin: 30px 0;
+            text-align: center;
+            position: relative;
+        }
+
+        .quote-mark {
+            font-size: 36px;
+            line-height: 1;
+            color: #c5cbd5;
+            font-family: Georgia, serif;
+            font-weight: 700;
+        }
+
+        .quote-open {
+            margin-bottom: 6px;
+        }
+
+        .quote-close {
+            margin-top: 6px;
+        }
+
+        .quote-content {
+            font-size: 19pt;
+            font-style: italic;
+            color: #374151;
+            line-height: 1.7;
+            font-weight: 500;
+        }
+
+        /* 이미지 컨테이너 */
+        .se-image-wrapper {
+            display: flex;
+            justify-content: center;
+            margin: 32px 0;
+        }
+
+        .image-container {
+            position: relative;
+            max-width: 100%;
+            display: inline-block;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+        }
+
+        .se-post-image {
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .rep-badge {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            background: #03c75a;
+            color: #ffffff;
+            font-size: 13px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 6px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            letter-spacing: -0.02em;
+        }
+
+        /* 촬영 예정 사진 플레이스홀더 */
+        .se-image-placeholder {
+            display: flex;
+            justify-content: center;
+            margin: 28px 0;
+        }
+
+        .placeholder-box {
+            width: 100%;
+            max-width: 480px;
+            background: #f8fafc;
+            border: 2px dashed #94a3b8;
+            border-radius: 12px;
+            padding: 22px 20px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .placeholder-icon {
+            font-size: 26px;
+        }
+
+        .placeholder-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #00a84b;
+            letter-spacing: -0.3px;
+        }
+
+        .placeholder-desc {
+            font-size: 15px;
+            font-weight: 500;
+            color: #475569;
+            line-height: 1.5;
+        }
+
+        /* 구분선 */
+        .se-divider {
+            border: none;
+            border-top: 1px solid #e5e7eb;
+            margin: 40px 0;
+        }
+
+        /* 태그 영역 */
+        .post-tags {
+            margin-top: 48px;
+            padding-top: 24px;
+            border-top: 1px solid #f3f4f6;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .tag-chip {
+            background: #f3f4f6;
+            color: #4b5563;
+            font-size: 14px;
+            font-weight: 600;
+            padding: 6px 12px;
+            border-radius: 20px;
+        }
+
+        /* 푸터 안내 */
+        .preview-footer {
+            text-align: center;
+            margin-top: 40px;
+            color: #9ca3af;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 상단 툴바 -->
+    <header class="preview-topbar">
+        <div class="topbar-info">
+            <span class="brand-badge">리무브 체형교정</span>
+            <span class="status-text">네이버 스마트에디터 ONE 실시간 프리뷰 (19pt 기본글꼴)</span>
+        </div>
+        <div class="topbar-actions">
+            <button id="btnPc" class="view-btn active" onclick="setViewMode('pc')">💻 데스크톱 (720px)</button>
+            <button id="btnMobile" class="view-btn" onclick="setViewMode('mobile')">📱 모바일 (430px)</button>
+        </div>
+    </header>
+
+    <!-- 프리뷰 본체 -->
+    <main id="layoutContainer" class="preview-layout">
+        <article class="post-card">
+            <header class="post-header">
+                <div class="category-text">📁 리무브 교정사례 &gt; 체형교정 전후 사례</div>
+                <h1 class="post-title">치마가 자꾸 돌아가고 다리길이가 짝짝이에요&#x27; 골반 틀어짐 교정 전후 실제 사례 (feat. 1:1 맞춤 케어)</h1>
+            </header>
+
+            <div class="post-content">
+                <div class="se-spacer"></div>
+
+            <div class="se-sticker-wrapper">
+                <img src="https://storep-phinf.pstatic.net/cafe_004/original_1.png" alt="여우 스티커 (greeting)" class="se-sticker-img" />
+            </div>
+            
+<div class="se-spacer"></div>
+<p class="se-paragraph">안녕하세요.</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">물리치료사 출신 체형교정 전문가, <strong>리무브 체형교정 센터장</strong>입니다.</p>
+<div class="se-spacer"></div>
+
+            <div class="se-image-wrapper">
+                <div class="image-container">
+                    <span class="rep-badge">대표</span>
+                    <img src="images/01_원장_프로필.png" alt="본문 이미지 1" class="se-post-image" loading="lazy" />
+                </div>
+            </div>
+            
+<div class="se-spacer"></div>
+<p class="se-paragraph">일상생활을 하시면서 이런 경험 한 번쯤 있으실 겁니다.</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">- 치마나 슬랙스를 입고 걷다 보면 <span class="preview-color" style="color: #ba0000;"><strong>자꾸 한쪽으로만 뱅글 돌아간다.</strong></span></p>
+<p class="se-paragraph">- 거울 앞에 서거나 누웠을 때, <span class="preview-color" style="color: #ba0000;"><strong>양쪽 다리 길이가 짝짝이인 것 같다.</strong></span></p>
+<p class="se-paragraph">- 신발 밑창을 살펴보면 유독 <span class="preview-color" style="color: #ba0000;"><strong>한쪽 바깥쪽이나 뒤꿈치만 심하게 닳아있다.</strong></span></p>
+<p class="se-paragraph">- 아니면.. 그냥 <span class="preview-color" style="color: #ba0000;"><strong>허리가 아프다.</strong></span></p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">(하나라도 해당되신다면... 오늘 글을 꼭 끝까지 읽어보셔야 합니다ㅎㅎ)</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">많은 분들이 이런 증상을 겪으실 때</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">&quot;어? 내가 태어날 때부터 <span class="preview-color" style="color: #ba0000;"><strong>한쪽 다리뼈가 짧은 건가...?</strong></span>&quot;</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">하며 덜컥 겁을 내시곤 합니다.</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">하지만 센터에서 <span class="preview-color" style="color: #004e82;"><strong>정밀 체형 분석</strong></span>을 해보면,</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph"><mark class="preview-highlight" style="background-color: #fff8b2;">실제로 다리뼈 자체의 길이가 다른 분은 전체의 1%도 되지 않습니다.</mark></p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">그렇다면 <mark class="preview-highlight" style="background-color: #fff8b2;">나머지 99%는 도대체 왜 다리 길이가 달라 보이는 걸까요?</mark></p>
+<div class="se-spacer"></div>
+<hr class="se-divider" />
+<div class="se-spacer"></div>
+<h3 class="se-section-title">💡 다리뼈가 긴 게 아니라, &#x27;골반&#x27;이 비틀린 것입니다</h3>
+<div class="se-spacer"></div>
+<p class="se-paragraph">다리가 연결된 <span class="preview-color" style="color: #004e82;"><strong>골반 양쪽 뼈(장골, Ilium)</strong></span>는 앞뒤로 미세하게 회전이 가능합니다.</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">이때 <mark class="preview-highlight" style="background-color: #fff8b2;">회전의 방향에 따라 다리가 길어 보이기도, 짧아 보이기도 하구요.</mark></p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">평소 <span class="preview-color" style="color: #ba0000;"><strong>짝다리를 짚거나, 다리를 꼬거나, 한쪽으로 비스듬히 앉는 습관들</strong></span>이 누적되면</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">한쪽 골반은 앞으로 기울어지고(전방경사), 반대쪽 골반은 뒤로 눕게 되는 <mark class="preview-highlight" style="background-color: #fff8b2;"><span class="preview-color" style="color: #ba0000;"><strong>&#x27;골반의 회전 변위&#x27;</strong></span></mark>가 일어납니다.</p>
+<div class="se-spacer"></div>
+
+            <div class="se-image-wrapper">
+                <div class="image-container">
+                    
+                    <img src="images/골반_측면회전_다리길이변화.png" alt="본문 이미지 2" class="se-post-image" loading="lazy" />
+                </div>
+            </div>
+            
+<div class="se-spacer"></div>
+
+            <div class="se-quote-box">
+                <div class="quote-mark quote-open">“</div>
+                <p class="quote-content">골반이 <span class="preview-color" style="color: #004e82;"><strong>앞으로 회전(전방경사)</strong></span>하면 고관절이 아래로 밀려 <span class="preview-color" style="color: #ba0000;"><strong>다리가 길어지고,</strong></span><br>골반이 <span class="preview-color" style="color: #004e82;"><strong>뒤로 눕게(후방경사)</strong></span> 되면 고관절이 위로 당겨져 <span class="preview-color" style="color: #ba0000;"><strong>다리가 짧아집니다.</strong></span></p>
+                <div class="quote-mark quote-close">”</div>
+            </div>
+            
+<div class="se-spacer"></div>
+<p class="se-paragraph">다리뼈 자체의 길이가 달라진 게 아니라, <mark class="preview-highlight" style="background-color: #fff8b2;">비틀린 골반이 다리를 위아래로 밀고 당기고 있었던 것</mark>이죠.</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">실제 리무브 체형교정을 찾아주신 고객님들의 <span class="preview-color" style="color: #00a84b;"><strong>전후 임상 사례</strong></span>를 통해 직접 보여드리겠습니다.</p>
+<div class="se-spacer"></div>
+<hr class="se-divider" />
+<div class="se-spacer"></div>
+<h3 class="se-section-title">💡 1. &quot;허리가 끊어질 듯 아파서 누웠더니, 다리길이가 짝짝이래요&quot;</h3>
+<div class="se-spacer"></div>
+
+            <div class="se-image-wrapper">
+                <div class="image-container">
+                    
+                    <img src="images/02_케이스4_비교.png" alt="본문 이미지 3" class="se-post-image" loading="lazy" />
+                </div>
+            </div>
+            
+<div class="se-spacer"></div>
+<p class="se-paragraph">장시간 앉아서 근무하시며 <span class="preview-color" style="color: #ba0000;"><strong>극심한 만성 허리 통증과 뻐근함</strong></span>을 호소하셨던 고객님입니다.</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">베드에 편안히 엎드려 무릎을 90도로 접어보는 <span class="preview-color" style="color: #004e82;"><strong>정밀 평가(Prone Knee Flexion Test)</strong></span>를 진행했을 때의 모습입니다.</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">사진 왼쪽(BEFORE)을 보시면,</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph"><mark class="preview-highlight" style="background-color: #fff8b2;"><span class="preview-color" style="color: #ba0000;"><strong>오른쪽 발꿈치가 왼쪽보다 심하게 짧아져 있는 것</strong></span></mark>을 확인하실 수 있습니다.</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">고객님께서도 촬영된 사진을 직접 확인하시고는</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">&quot;선생님, <span class="preview-color" style="color: #ba0000;"><strong>제 다리가 왜 이렇게까지 차이가 나요?!</strong></span>&quot;</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">라며 깜짝 놀라셨습니다. (이러니... 아프죠)</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">이 상태로 매일 1만 보씩 걷고 생활하셨으니, <mark class="preview-highlight" style="background-color: #fff8b2;">짝짝이 다리로 인해 허리와 골반 한쪽으로만 체중이 쏠리니 통증이 생길 수밖에 없었던 것</mark>이죠.</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">굳어진 골반 주변 근육을 정밀하게 이완하고, 틀어진 천장관절을 바로잡는 <span class="preview-color" style="color: #004e82;"><strong>1:1 맞춤 수기 교정</strong></span>을 진행했습니다.</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">그리고 오른쪽(AFTER) 사진을 보시면,</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">단 한 번의 교정 세션만으로 <mark class="preview-highlight" style="background-color: #fff8b2;"><span class="preview-color" style="color: #00a84b;"><strong>양측 뒤꿈치가 완벽한 수평선</strong></span></mark>을 되찾은 것을 보실 수 있습니다.</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">&quot;선생님, <span class="preview-color" style="color: #00a84b;"><strong>일어났는데 양발로 바닥을 딛는 느낌이 완전히 달라요!</strong></span>&quot;</p>
+<div class="se-spacer"></div>
+
+            <div class="se-sticker-wrapper">
+                <img src="https://storep-phinf.pstatic.net/cafe_004/original_15.png" alt="여우 스티커 (clap)" class="se-sticker-img" />
+            </div>
+            
+<div class="se-spacer"></div>
+<hr class="se-divider" />
+<div class="se-spacer"></div>
+<h3 class="se-section-title">💡 2. 다리 꼬는 습관, 짝다리가 만든 &#x27;골반 회전&#x27;</h3>
+<div class="se-spacer"></div>
+
+            <div class="se-image-wrapper">
+                <div class="image-container">
+                    
+                    <img src="images/03_케이스2_비교.png" alt="본문 이미지 4" class="se-post-image" loading="lazy" />
+                </div>
+            </div>
+            
+<div class="se-spacer"></div>
+<p class="se-paragraph">&quot;선생님, <span class="preview-color" style="color: #ba0000;"><strong>저는 무거운 짐을 드는 일도 안 하는데 왜 골반이 틀어질까요?</strong></span>&quot;</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph"><mark class="preview-highlight" style="background-color: #fff8b2;">일상 속 사소한 자세 습관이 가장 무섭습니다.</mark></p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">서 있을 때 <span class="preview-color" style="color: #ba0000;"><strong>한쪽 다리에만 체중을 싣는 짝다리</strong></span>, 카페나 사무실에서 습관적으로 <span class="preview-color" style="color: #ba0000;"><strong>다리를 꼬는 자세</strong></span>는</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">골반을 <span class="preview-color" style="color: #ba0000;"><strong>후방으로 회전</strong></span>시켜버립니다.</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">두 번째 고객님은 주로 <span class="preview-color" style="color: #ba0000;"><strong>오른다리로 짝다리를 짚고, 오른다리를 왼다리 위에 올려 꼬는 습관</strong></span>이 있으셨습니다.</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">후방으로 회전된 골반 정렬을 바로잡고, 비틀려 굳어있던 주변 근육을 부드럽게 정상화하는 <mark class="preview-highlight" style="background-color: #fff8b2;"><span class="preview-color" style="color: #004e82;"><strong>1:1 맞춤 교정</strong></span></mark>을 진행했습니다.</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">그 결과, 보시는 것처럼 <span class="preview-color" style="color: #00a84b;"><strong>양쪽 발끝의 높이가 칼같이 정확한 수평 정렬</strong></span>을 회복하셨습니다.</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph"><mark class="preview-highlight" style="background-color: #fff8b2;">골반의 수평이 맞춰지면, 골반 위에 얹혀 있던 허리와 척추의 부담도 즉각적으로 줄어들게 됩니다.</mark></p>
+<div class="se-spacer"></div>
+
+            <div class="se-sticker-wrapper">
+                <img src="https://storep-phinf.pstatic.net/cafe_004/original_27.png" alt="여우 스티커 (ok)" class="se-sticker-img" />
+            </div>
+            
+<div class="se-spacer"></div>
+<hr class="se-divider" />
+<div class="se-spacer"></div>
+<h3 class="se-section-title">💡 3. &quot;교정받아도 며칠 지나면 또 틀어져요...&quot; 뼈만 생각해서는 안 되는 이유</h3>
+<div class="se-spacer"></div>
+<p class="se-paragraph">많은 분들이 체형교정을 받으실 때 이런 질문을 자주 하십니다.</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">&quot;선생님, 교정받고 나면 다리길이가 딱 맞는데... <span class="preview-color" style="color: #ba0000;"><strong>며칠 지나면 왜 또 원래대로 돌아가는 느낌이 들까요?</strong></span>&quot;</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">현장에서 수많은 임상을 보며 느낀 진실을 솔직하게 말씀드리겠습니다.</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph"><mark class="preview-highlight" style="background-color: #fff8b2;"><span class="preview-color" style="color: #ba0000;"><strong>틀어진 뼈(골반)만 제자리에 맞추는 교정은 반쪽짜리에 불과합니다.</strong></span></mark></p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">우리 몸의 뼈는 혼자서 움직이지 않습니다.</p>
+<p class="se-paragraph">뼈를 움직이게 만드는 것은 결국 <span class="preview-color" style="color: #004e82;"><strong>&#x27;근육&#x27;</strong></span>입니다.</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">골반이 수개월, 수년 동안 틀어져 있었다면,</p>
+<p class="se-paragraph">골반 주변의 근육들은 <mark class="preview-highlight" style="background-color: #fff8b2;">&#x27;비틀어진 뼈의 위치&#x27;에 맞춰 스스로 적응(보상 작용)을 마친 상태</mark>입니다.</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">- 어떤 근육은 틀어진 골반을 버티느라 <span class="preview-color" style="color: #ba0000;"><strong>팽팽하게 늘어나 굳어버렸고,</strong></span></p>
+<p class="se-paragraph">- 어떤 근육은 짧아진 채로 <span class="preview-color" style="color: #ba0000;"><strong>단단하게 뭉쳐 본래의 이완 기능을 완전히 잃어버렸습니다.</strong></span></p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">이 상태에서 근육은 그대로 둔 채, <span class="preview-color" style="color: #ba0000;"><strong>뼈만 억지로 제자리에 맞춰놓으면</strong></span> 어떻게 될까요?</p>
+<div class="se-spacer"></div>
+
+            <div class="se-quote-box">
+                <div class="quote-mark quote-open">“</div>
+                <p class="quote-content">이미 비뚤어진 위치에 적응해버린 근육들이,<br><span class="preview-color" style="color: #ba0000;"><strong>마치 질긴 고무줄처럼</strong></span> 바르게 맞춰놓은 뼈를 <span class="preview-color" style="color: #ba0000;"><strong>다시 예전의 틀어진 자리로 끌어당깁니다.</strong></span></p>
+                <div class="quote-mark quote-close">”</div>
+            </div>
+            
+<div class="se-spacer"></div>
+<p class="se-paragraph">(교정을 받아도 며칠 만에 도로 제자리로 돌아갔던 이유가 바로 이 때문입니다ㅎㅎ)</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">따라서 <mark class="preview-highlight" style="background-color: #fff8b2;">진정한 체형교정은 단순히 뼈의 위치만 맞추는 것으로 끝나서는 안 됩니다.</mark></p>
+<div class="se-spacer"></div>
+<p class="se-paragraph"><mark class="preview-highlight" style="background-color: #fff8b2;">오랜 시간 틀어진 뼈에 맞춰 잘못 적응해버린 근육들을 하나하나 정밀하게 평가하고, 본연의 건강한 길이와 움직임으로 되돌려주는 <span class="preview-color" style="color: #00a84b;"><strong>&#x27;근육 교정&#x27;</strong></span>이 반드시 함께 이루어져야 합니다.</mark></p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">이미 비정상적인 정렬에 익숙해진 근육들을 <span class="preview-color" style="color: #004e82;"><strong>&#x27;본연의 본래 모습&#x27;</strong></span>으로 바로잡아 줄 때,</p>
+<p class="se-paragraph">비로소 <mark class="preview-highlight" style="background-color: #fff8b2;"><span class="preview-color" style="color: #00a84b;"><strong>바르게 맞춘 골반이 흔들림 없이 그 자리에서 유지되고 재발 없는 진짜 교정</strong></span></mark>이 완성됩니다.</p>
+<div class="se-spacer"></div>
+<hr class="se-divider" />
+<div class="se-spacer"></div>
+<h3 class="se-section-title">🌿 &quot;불편함을 Remove, 내 몸을 Re-move&quot;</h3>
+<div class="se-spacer"></div>
+
+            <div class="se-image-wrapper">
+                <div class="image-container">
+                    
+                    <img src="images/05_로고4.png" alt="본문 이미지 5" class="se-post-image" loading="lazy" />
+                </div>
+            </div>
+            
+<div class="se-spacer"></div>
+
+            <div class="se-quote-box">
+                <div class="quote-mark quote-open">“</div>
+                <p class="quote-content"><strong>&quot;불편함을 Remove, 내 몸을 Re-move&quot;</strong></p>
+                <div class="quote-mark quote-close">”</div>
+            </div>
+            
+<div class="se-spacer"></div>
+<p class="se-paragraph">오랜 시간 여러분을 괴롭혀온 골반 비틀림과 다리길이 불균형은 <span class="preview-color" style="color: #00a84b;"><strong>깨끗하게 제거(Remove)</strong></span>하고,</p>
+<p class="se-paragraph">틀어진 뼈와 적응해버린 근육을 본래의 건강한 상태로 되돌려 <span class="preview-color" style="color: #00a84b;"><strong>균형 잡힌 바른 움직임을 다시(Re-move)</strong></span> 선물해 드립니다.</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">- <span class="preview-color" style="color: #ba0000;"><strong>치마나 바지가 자꾸 한쪽으로 돌아가</strong></span> 신경 쓰이시거나</p>
+<p class="se-paragraph">- 누웠을 때 <span class="preview-color" style="color: #ba0000;"><strong>다리길이가 짝짝이라 허리와 골반이 은근히 뻐근</strong></span>하시거나</p>
+<p class="se-paragraph">- 단순 마사지나 뼈만 맞추는 교정이 아닌, <span class="preview-color" style="color: #004e82;"><strong>근본적인 체형 개선</strong></span>을 원하신다면</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">언제든 편안하게 리무브의 문을 두드려 주세요.</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">고객님의 몸에 꼭 맞춘 <span class="preview-color" style="color: #004e82;"><strong>정밀 1:1 맞춤 평가</strong></span>와 진정성 있는 케어로, <mark class="preview-highlight" style="background-color: #fff8b2;"><span class="preview-color" style="color: #00a84b;"><strong>매일매일 가벼워지는 일상</strong></span></mark>을 증명해 드리겠습니다.</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph">긴 글 읽어주셔서 진심으로 감사합니다.</p>
+<div class="se-spacer"></div>
+<p class="se-paragraph"><strong>[리무브 체형교정 찾아오시는 길]</strong></p>
+<p class="se-paragraph">📍 경기 구리시 갈매순환로 204번길 8-22 1층 (갈매역 도보 5분)</p>
+<p class="se-paragraph">💬 문의/상담: 네이버 톡톡 또는 전화로 편하게 문의주세요.</p>
+<div class="se-spacer"></div>
+
+            <div class="se-sticker-wrapper">
+                <img src="https://storep-phinf.pstatic.net/cafe_004/original_13.png" alt="여우 스티커 (cheering)" class="se-sticker-img" />
+            </div>
+            
+<div class="se-spacer"></div>
+<p class="se-paragraph">#리무브체형교정 #구리체형교정 #갈매체형교정 #골반교정 #다리길이교정 #골반틀어짐 #체형교정센터 #물리치료사출신 #허리통증 #재활운동 #체형분석</p>
+            </div>
+
+            <footer class="post-tags">
+                <span class="tag-chip">#리무브체형교정</span><span class="tag-chip">#구리체형교정</span><span class="tag-chip">#갈매체형교정</span><span class="tag-chip">#골반교정</span><span class="tag-chip">#다리길이교정</span><span class="tag-chip">#골반틀어짐</span><span class="tag-chip">#체형교정센터</span><span class="tag-chip">#물리치료사출신</span><span class="tag-chip">#허리통증</span><span class="tag-chip">#재활운동</span><span class="tag-chip">#체형분석</span>
+            </footer>
+        </article>
+
+        <div class="preview-footer">
+            🌿 리무브 체형교정 블로그 자동화 시스템 | 스마트에디터 ONE 주입 전 검토용 프리뷰
+        </div>
+    </main>
+
+    <script>
+        function setViewMode(mode) {
+            const layout = document.getElementById('layoutContainer');
+            const btnPc = document.getElementById('btnPc');
+            const btnMobile = document.getElementById('btnMobile');
+
+            if (mode === 'mobile') {
+                layout.classList.add('mobile-mode');
+                btnMobile.classList.add('active');
+                btnPc.classList.remove('active');
+            } else {
+                layout.classList.remove('mobile-mode');
+                btnPc.classList.add('active');
+                btnMobile.classList.remove('active');
+            }
+        }
+    </script>
+</body>
+</html>

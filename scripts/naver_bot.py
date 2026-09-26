@@ -562,11 +562,18 @@ def resolve_image_path(rel_path_str: str, post_dir: Path = None) -> Path | None:
         return direct
     
     candidates = [
-        WORKSPACE_DIR / "assets" / clean_name,
-        WORKSPACE_DIR / "assets" / "로고" / clean_name,
-        WORKSPACE_DIR / "assets" / "프로필" / clean_name,
-        WORKSPACE_DIR / "assets" / "리뷰" / clean_name,
-        WORKSPACE_DIR / "assets" / "에디터참조" / clean_name,
+        WORKSPACE_DIR / "assets" / "images" / clean_name,
+        WORKSPACE_DIR / "assets" / "images" / "로고" / clean_name,
+        WORKSPACE_DIR / "assets" / "images" / "프로필" / clean_name,
+        WORKSPACE_DIR / "assets" / "images" / "리뷰" / clean_name,
+        WORKSPACE_DIR / "assets" / "images" / "교정" / clean_name,
+        WORKSPACE_DIR / "assets" / "images" / "해부학_다이어그램" / clean_name,
+        WORKSPACE_DIR / "assets" / "images" / "교정_전후" / clean_name,
+        WORKSPACE_DIR / "assets" / "images" / "교정_전후" / "케이스1_블루데님" / clean_name,
+        WORKSPACE_DIR / "assets" / "images" / "교정_전후" / "케이스2_워싱데님" / clean_name,
+        WORKSPACE_DIR / "assets" / "images" / "교정_전후" / "케이스3_베이지슬랙스" / clean_name,
+        WORKSPACE_DIR / "assets" / "images" / "교정_전후" / "케이스4_블랙팬츠" / clean_name,
+        WORKSPACE_DIR / "scripts" / "에디터참조" / clean_name,
     ]
     for c in candidates:
         if c.exists() and c.is_file():

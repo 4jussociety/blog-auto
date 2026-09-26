@@ -49,6 +49,43 @@ HL_MAP = {
 }
 
 
+def find_image_file(raw_path: str, md_dir: Path) -> Path | None:
+    """assets, images, 교정_전후 등에서 원본 이미지 파일을 탐색합니다."""
+    clean_name = Path(raw_path).name
+    # 1. md_dir 기준
+    candidate = md_dir / raw_path
+    if candidate.exists() and candidate.is_file():
+        return candidate
+    candidate_img = md_dir / "images" / clean_name
+    if candidate_img.exists() and candidate_img.is_file():
+        return candidate_img
+    # 2. WORKSPACE_DIR 기준
+    candidate_ws = WORKSPACE_DIR / raw_path
+    if candidate_ws.exists() and candidate_ws.is_file():
+        return candidate_ws
+    # 3. assets 및 하위 폴더 탐색
+    for c in [
+        WORKSPACE_DIR / "assets" / "images" / clean_name,
+        WORKSPACE_DIR / "assets" / "images" / "로고" / clean_name,
+        WORKSPACE_DIR / "assets" / "images" / "프로필" / clean_name,
+        WORKSPACE_DIR / "assets" / "images" / "리뷰" / clean_name,
+        WORKSPACE_DIR / "assets" / "images" / "교정" / clean_name,
+        WORKSPACE_DIR / "assets" / "images" / "해부학_다이어그램" / clean_name,
+        WORKSPACE_DIR / "assets" / "images" / "교정_전후" / clean_name,
+        WORKSPACE_DIR / "assets" / "images" / "교정_전후" / "케이스1_블루데님" / clean_name,
+        WORKSPACE_DIR / "assets" / "images" / "교정_전후" / "케이스2_워싱데님" / clean_name,
+        WORKSPACE_DIR / "assets" / "images" / "교정_전후" / "케이스3_베이지슬랙스" / clean_name,
+        WORKSPACE_DIR / "assets" / "images" / "교정_전후" / "케이스4_블랙팬츠" / clean_name,
+    ]:
+        if c.exists() and c.is_file():
+            return c
+    # 4. assets 내 재귀 탐색
+    for p in (WORKSPACE_DIR / "assets").rglob(clean_name):
+        if p.is_file():
+            return p
+    return None
+
+
 def parse_frontmatter(content: str):
     """Frontmatter 추출"""
     title = ""
@@ -241,15 +278,24 @@ def generate_preview_html(md_file_path: Path, output_html_path: Path = None) -> 
         # 이미지
         if stripped.startswith("[IMAGE:"):
             image_count += 1
-            img_rel_path = stripped.replace("[IMAGE:", "").replace("]", "").strip()
-            # 상대 경로 그대로 사용 (HTML과 같은 폴더 또는 하위 images/ 폴더)
+            raw_img_path = stripped.replace("[IMAGE:", "").replace("]", "").strip()
+            # 파일 탐색 및 HTML 파일 기준 상대 경로 자동 계산
+            found_img = find_image_file(raw_img_path, md_file_path.parent)
+            if found_img and output_html_path:
+                try:
+                    img_src = os.path.relpath(found_img, output_html_path.parent).replace("\\", "/")
+                except Exception:
+                    img_src = raw_img_path
+            else:
+                img_src = raw_img_path
+
             is_rep = (image_count == 1)
             badge_html = '<span class="rep-badge">대표</span>' if is_rep else ''
             body_html_parts.append(f"""
             <div class="se-image-wrapper">
                 <div class="image-container">
                     {badge_html}
-                    <img src="{img_rel_path}" alt="본문 이미지 {image_count}" class="se-post-image" loading="lazy" />
+                    <img src="{img_src}" alt="본문 이미지 {image_count}" class="se-post-image" loading="lazy" />
                 </div>
             </div>
             """)
